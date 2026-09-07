@@ -13,7 +13,7 @@ Agents and contributors must follow `docs/` while working in this repository. `d
 - Planning documents **must not** be placed in `docs/`.
 - Do not mix the two. Do not add RFCs, next-phase contracts, or “for the next agent” write-ups under `docs/`.
 
-Read `docs/CONDUCT.md` and `docs/ARCHITECTURE.md` before changing architecture, routes, MODEL/ROUTE behavior, the CLI, the inspector, or documentation.
+Read `docs/CONDUCT.md` and `docs/ARCHITECTURE.md` before changing architecture, routes, MODEL/ROUTE behavior, the CLI, the inspector, tests, or documentation.
 
 ## Architecture rules
 
@@ -30,3 +30,11 @@ Read `docs/CONDUCT.md` and `docs/ARCHITECTURE.md` before changing architecture, 
 - Generated content is English only.
 - Do not commit unless asked.
 - Do not put planning notes in `docs/`.
+
+## Testing
+
+- Unit tests use Vitest. Run them with `npm test` (`vitest run`) or `npm run test:watch`.
+- Colocate tests next to the module as `*.test.ts` (for example `src/lib/server/model/index.test.ts`).
+- Vitest scans `src/**/*.test.ts`. Do not put unit tests outside `src/`.
+- Tests import project modules with `$lib/...` aliases, same as production code.
+- A Husky pre-commit hook runs `npm test`. The commit is rejected if tests fail. Do not skip the hook.

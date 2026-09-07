@@ -20,7 +20,16 @@ export type CompiledTable = {
 export type Row = Record<string, unknown>;
 export type Store = Record<string, Row[]>;
 
-export class FieldBuilder {
+export const compileField: unique symbol = Symbol('nipuu.compileField');
+
+export type Field = {
+	required(): Field;
+	default(value: unknown): Field;
+	factory(fn: (ctx: FactoryContext) => unknown): Field;
+	rel(table: string, field: string): Field;
+};
+
+export class FieldBuilder implements Field {
 	#type: FieldKind;
 	#required = false;
 	#hasDefault = false;
@@ -53,7 +62,7 @@ export class FieldBuilder {
 		return this;
 	}
 
-	compile(name: string): CompiledField {
+	[compileField](name: string): CompiledField {
 		return {
 			name,
 			type: this.#type,
@@ -67,15 +76,15 @@ export class FieldBuilder {
 }
 
 export type ModelT = {
-	string: () => FieldBuilder;
-	boolean: () => FieldBuilder;
+	string: () => Field;
+	boolean: () => Field;
 	id: {
-		index: () => FieldBuilder;
-		uuid: () => FieldBuilder;
+		index: () => Field;
+		uuid: () => Field;
 	};
 };
 
-export type ModelDefinition = Record<string, (t: ModelT) => Record<string, FieldBuilder>>;
+export type ModelDefinition = Record<string, (t: ModelT) => Record<string, Field>>;
 
 export function createT(): ModelT {
 	return {
@@ -97,7 +106,7 @@ export function compileModel(definition: ModelDefinition): CompiledTable[] {
 			if (!(builder instanceof FieldBuilder)) {
 				throw new Error(`MODEL.${name}.${fieldName} must be a field builder`);
 			}
-			fields[fieldName] = builder.compile(fieldName);
+			fields[fieldName] = builder[compileField](fieldName);
 		}
 		return { name, fields };
 	});

@@ -23,3 +23,11 @@ npx nipuu ./mocks/index.mjs
 ```
 
 Open `http://localhost:4210/_nipuu` for the inspector. All other paths are the mock API.
+
+## Test
+
+```sh
+npm test
+```
+
+Vitest runs colocated `src/**/*.test.ts` files. A pre-commit hook runs `npm test`; the commit is rejected if tests fail.

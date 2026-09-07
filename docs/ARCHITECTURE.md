@@ -48,6 +48,12 @@ All mutable process state lives under `src/lib/server/` and is imported only fro
 
 Shared DTOs the inspector may import live in `src/lib/types/` (for example `LogEntry`). No store, no `fs`, no env reads there.
 
+## Testing
+
+Unit tests use Vitest (`npm test`). Config lives in `vite.config.ts`: `include` is `src/**/*.test.ts`, `environment` is `node`. Colocate `*.test.ts` next to the module under test (for example `src/lib/server/model/index.test.ts` for compile, seed, and `validate()`).
+
+`prepare` installs Husky. `.husky/pre-commit` runs `npm test`; a failing suite blocks the commit.
+
 ## MVP data plane
 
 - Config value is a string or number → `text/plain` body (`GET /` = `Hello!`).
