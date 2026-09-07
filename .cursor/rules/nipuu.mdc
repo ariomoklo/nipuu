@@ -1,0 +1,6 @@
+---
+description: Always follow Nipuu docs and the project conduct skill
+alwaysApply: true
+---
+
+Load `.cursor/skills/nipuu-conduct/SKILL.md` and follow `docs/` on every conversation. Read `docs/CONDUCT.md` and `docs/ARCHITECTURE.md` before architecture, route, or documentation changes. Planning docs belong in `plans/`, never in `docs/`.

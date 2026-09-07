@@ -1,0 +1,35 @@
+{
+	"name": "nipuu",
+	"private": true,
+	"version": "0.0.1",
+	"description": "Mock API CLI with an in-memory MODEL/ROUTE runtime and a SvelteKit inspector",
+	"type": "module",
+	"bin": {
+		"nipuu": "./src/cli.js"
+	},
+	"files": [
+		"src",
+		"vite.config.ts",
+		"tsconfig.json"
+	],
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+	},
+	"dependencies": {
+		"@sveltejs/adapter-auto": "^7.0.1",
+		"@sveltejs/kit": "^2.63.0",
+		"@sveltejs/vite-plugin-svelte": "^7.1.2",
+		"svelte": "^5.56.1",
+		"vite": "^8.0.16"
+	},
+	"devDependencies": {
+		"@types/node": "^26.4.1",
+		"svelte-check": "^4.6.0",
+		"typescript": "^6.0.3"
+	}
+}
