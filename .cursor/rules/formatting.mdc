@@ -1,0 +1,24 @@
+---
+description: Blank line after every closing block brace
+globs: **/*.{ts,js,svelte}
+alwaysApply: false
+---
+
+# Formatting
+
+After a closing `}` that ends a block, put a blank line before the next statement. Do not put a blank line between `}` and `else` / `catch` / `finally`, or immediately before a parent `}`.
+
+```ts
+// ❌ BAD
+for (const table of tables.values()) {
+  destroy(table);
+}
+tables.clear();
+
+// ✅ GOOD
+for (const table of tables.values()) {
+  destroy(table);
+}
+
+tables.clear();
+```

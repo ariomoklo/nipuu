@@ -32,6 +32,7 @@ function parseArgs(argv) {
 				console.error(USAGE);
 				process.exit(1);
 			}
+
 			port = parsed;
 			continue;
 		}
@@ -43,6 +44,7 @@ function parseArgs(argv) {
 				console.error(USAGE);
 				process.exit(1);
 			}
+
 			seed = parsed;
 			continue;
 		}

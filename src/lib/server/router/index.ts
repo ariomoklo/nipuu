@@ -1,10 +1,3 @@
-export type MatchResult = {
-	pattern: string;
-	method: string;
-	handler: unknown;
-	params: Record<string, string>;
-};
-
 type Segment = { type: 'static'; value: string } | { type: 'param'; name: string };
 
 function parsePattern(pattern: string): Segment[] {
@@ -38,6 +31,13 @@ function matchPath(pattern: string, pathname: string): Record<string, string> | 
 
 	return params;
 }
+
+export type MatchResult = {
+	pattern: string;
+	method: string;
+	handler: unknown;
+	params: Record<string, string>;
+};
 
 export function matchRoute(
 	routes: Record<string, Record<string, unknown>>,

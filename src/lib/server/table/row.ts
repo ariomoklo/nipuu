@@ -1,5 +1,17 @@
 import type { FieldItem, Payload, RelationValue, Row } from '$lib/server/model/types';
 
+function cloneValue(value: unknown): unknown {
+	if (isRelationValue(value)) {
+		return { index: value.index, row: cloneRow(value.row) };
+	}
+
+	if (isFieldItem(value)) {
+		return cloneFieldItem(value);
+	}
+
+	return value;
+}
+
 export function createFieldItem(schema: string, value: unknown, hasRelation: boolean): FieldItem {
 	return { schema, value, hasRelation };
 }
@@ -39,6 +51,7 @@ export function cloneRow(row: Row): Row {
 	for (const [key, item] of Object.entries(row)) {
 		next[key] = cloneFieldItem(item);
 	}
+
 	return next;
 }
 
@@ -47,6 +60,7 @@ export function omitRow(row: Row, omit: string[]): Row {
 	for (const key of omit) {
 		delete next[key];
 	}
+
 	return next;
 }
 
@@ -54,6 +68,7 @@ export function projectField(item: FieldItem): unknown {
 	if (item.hasRelation && isRelationValue(item.value)) {
 		return projectRow(item.value.row);
 	}
+
 	return item.value;
 }
 
@@ -62,6 +77,7 @@ export function projectRow(row: Row): Payload {
 	for (const [key, item] of Object.entries(row)) {
 		out[key] = projectField(item);
 	}
+
 	return out;
 }
 
@@ -71,20 +87,11 @@ export function filterValue(item: FieldItem | undefined, joinField?: string): un
 		if (!joinField) return undefined;
 		return item.value.row[joinField]?.value;
 	}
+
 	return item.value;
 }
 
 export function relationIndex(item: FieldItem | undefined): number | undefined {
 	if (!item?.hasRelation || !isRelationValue(item.value)) return undefined;
 	return item.value.index;
-}
-
-function cloneValue(value: unknown): unknown {
-	if (isRelationValue(value)) {
-		return { index: value.index, row: cloneRow(value.row) };
-	}
-	if (isFieldItem(value)) {
-		return cloneFieldItem(value);
-	}
-	return value;
 }

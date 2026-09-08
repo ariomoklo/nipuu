@@ -10,7 +10,7 @@ export type ConfigDefinition = {
 export async function loadConfig(): Promise<ConfigDefinition> {
 	const configPath = process.env.NIPUU_CONFIG;
 	if (!configPath) {
-		throw new Error('NIPUU_CONFIG is not set. Start Nipuu with: nipuu <config-file>');
+		throw new Error('config is not set. Start mock server with: nipuu <config-file>');
 	}
 
 	const imported = (await import(/* @vite-ignore */ pathToFileURL(configPath).href)) as Partial<ConfigDefinition>;
@@ -24,7 +24,8 @@ export async function loadConfig(): Promise<ConfigDefinition> {
 export function readSeedCount(): number {
 	const parsed = Number(process.env.NIPUU_SEED ?? 10);
 	if (!Number.isInteger(parsed) || parsed < 0) {
-		throw new Error(`Invalid NIPUU_SEED: ${process.env.NIPUU_SEED}`);
+		throw new Error(`Invalid seed count: ${process.env.NIPUU_SEED}`);
 	}
+
 	return parsed;
 }

@@ -1,9 +1,5 @@
+import { validate, type Schema, type Store } from '$lib/server/model';
 import type { RouteHandler, RouteHandlerObject } from '$lib/types';
-
-export type DispatchContext = {
-	params: Record<string, string>;
-	queries: Record<string, string>;
-};
 
 function json(data: unknown, status = 200): Response {
 	return new Response(JSON.stringify(data), {
@@ -11,6 +7,11 @@ function json(data: unknown, status = 200): Response {
 		headers: { 'content-type': 'application/json' }
 	});
 }
+
+export type DispatchContext = {
+	params: Record<string, string>;
+	queries: Record<string, string>;
+};
 
 export function dispatch(handler: RouteHandler, context: DispatchContext): Response {
 	if (typeof handler === 'string' || typeof handler === 'number') {
@@ -38,4 +39,21 @@ export function notFound(): Response {
 
 export function validationError(errors: string[]): Response {
 	return json({ error: 'Validation failed', details: errors }, 400);
+}
+
+export function validateMutating(
+	tables: Schema[],
+	store: Store,
+	method: string,
+	handler: RouteHandler,
+	body: unknown
+): Response | null {
+	if (method !== 'POST' && method !== 'PUT') return null;
+	if (typeof handler !== 'object' || handler === null) return null;
+	if (typeof handler.model !== 'string') return null;
+
+	const payload = method === 'PUT' && body == null ? {} : body;
+	const result = validate(tables, store, handler.model, payload, { partial: method === 'PUT' });
+	if (!result.ok) return validationError(result.errors);
+	return null;
 }

@@ -23,6 +23,41 @@ Read `docs/CONDUCT.md` and `docs/ARCHITECTURE.md` before changing architecture, 
 - `App.Locals` is only `requestId` and `startedAt`.
 - Do not implement features that `docs/` and `plans/` mark as future work (action execution, persistence, inspector styling, SSE) unless a later plan in `plans/` is being executed.
 
+## Functional style
+
+- Prefer functions, plain data, and module-owned `globalThis` state over classes.
+- Do not add classes, instance methods, or OOP hierarchies.
+- Fluent MODEL field builders are factory functions that return new builder values, not class instances.
+- Process-lifetime state (config, compiled schemas, tables, logs, field-schema registry) lives on `globalThis` via `Symbol.for`. Never put it on `App.Locals`. Never thread a god object through every call.
+
+## File layout
+
+Group utilities by use.
+
+- A simple helper with no test colocates in the parent module: unexported next to the main function, or a sibling file in that folder. No dump `utils.ts`.
+- A singular implementation file with **no test** stays in the parent folder (`src/lib/server/table/row.ts`). Do not wrap it as `table/row/row.ts`.
+- If a use case has a test file, move it to a subdirectory (`table/filter/filter.ts` + `table/filter/filter.test.ts`).
+- If a use case splits into multiple implementation files, move it to a subdirectory (`table/query/query.ts`, `table/query/parse.ts`, `table/query/query.test.ts`).
+- Module `index.ts` and `index.test.ts` stay at the module root. Parent `index.ts` is the public barrel. Outside callers import `$lib/server/table`, not a deep path.
+- In each file, put unexported local functions (and unexported types/constants they need) at the top. Put exported functions, objects, and variables at the bottom.
+
+## Formatting
+
+- After a closing `}` that ends a block, put a blank line before the next statement.
+- Do not put a blank line between `}` and `else` / `catch` / `finally`, or immediately before a parent `}`.
+
+```ts
+export function resetTables() {
+  const tables = getTables();
+  for (const table of tables.values()) {
+    destroy(table);
+  }
+
+  tables.clear();
+  clearSchemas();
+}
+```
+
 ## Implementation rules
 
 - Smallest change that matches the current contract.

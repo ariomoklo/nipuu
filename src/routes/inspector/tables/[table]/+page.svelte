@@ -21,6 +21,7 @@
 			if (related == null) return '';
 			return String(related);
 		}
+
 		if (typeof cell === 'boolean') return cell ? 'true' : 'false';
 		if (cell == null) return '';
 		return String(cell);
@@ -40,9 +41,11 @@
 		for (const [key, value] of Object.entries(data.values)) {
 			params.set(key, value);
 		}
+
 		for (const [key, value] of Object.entries(data.operators)) {
 			params.set(`${key}.by`, value);
 		}
+
 		return `${INSPECTOR_URL}/tables/${data.name}?${params}`;
 	}
 </script>

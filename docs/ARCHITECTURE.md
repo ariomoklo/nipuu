@@ -24,7 +24,7 @@ cli.js → Vite / SvelteKit → hooks.server.ts (sequence)
 
 1. **handleCors** — `OPTIONS` preflight and CORS headers on every outgoing response.
 2. **handleControlPlane** — continues the sequence. Control-plane paths reach the file router; data-plane paths reach `handleDataPlane`.
-3. **handleDataPlane** — if the path is control-plane, `resolve(event)`. Otherwise `getRuntime().handle(event)` always returns a `Response` (200 stub, static body, 400 validation, or 404).
+3. **handleDataPlane** — if the path is control-plane, `resolve(event)`. Otherwise `initRuntime()` then `handleRequest(event)` always returns a `Response` (200 stub, static body, 400 validation, or 404).
 
 `App.Locals` holds only `requestId` and `startedAt`. Do not put the store on `locals`.
 
@@ -36,22 +36,32 @@ SvelteKit treats directories that start with `_` as private modules, so `src/rou
 
 All mutable process state lives under `src/lib/server/` and is imported only from hooks, `+page.server.ts`, and `+server.ts`. Import these modules with `$lib/server/...` aliases, never relative paths. The client must never import `$lib/server`.
 
+Process-lifetime state (config, compiled schemas, tables, logs, field-schema registry) is stored on `globalThis` via `Symbol.for` so Vite HMR does not re-seed. Domain code is functions over plain data, not classes.
+
+### File layout
+
+- Singular untested files stay in the parent folder (`table/row.ts`). Do not wrap them as `table/row/row.ts`.
+- A use case with a test file or multiple implementation files lives in a subdirectory (`table/filter/filter.ts`, `table/query/query.ts` + `parse.ts`).
+- Module `index.ts` / `index.test.ts` stay at the module root and are the public barrel.
+- Unexported local functions sit at the top of a file; exported functions, objects, and variables sit at the bottom.
+
 | Module | Role |
 |---|---|
-| `runtime/` | `initRuntime()` / `getRuntime()` — load config, compile MODEL, seed, hold router + logs. Singleton on `globalThis` so Vite HMR does not re-seed. Request body and mutating-validation helpers live in `utils.ts`. |
-| `config.ts` | `pathToFileURL` + dynamic import of `NIPUU_CONFIG`. Fail fast if `MODEL` / `ROUTE` are missing. |
-| `model/` | Fluent factory, compile, `validate()`. Types in `types.ts`. No SvelteKit imports. |
-| `table/` | In-memory `TableStore` map, seed, relation snapshots, select/find projection. |
+| `runtime/` | `initRuntime()` loads config, compiles MODEL, seeds tables. `handleRequest(event)` is the data-plane entry. Config and schemas live on `globalThis`. |
+| `runtime/config.ts` | `pathToFileURL` + dynamic import of `NIPUU_CONFIG`. Fail fast if `MODEL` / `ROUTE` are missing. |
+| `runtime/handle.ts` | Match `ROUTE`, validate mutating POST/PUT, dispatch, append a log. Body read/peek are unexported locals. |
+| `model/` | `generateSchemas()`, field factory, `validate()`. Types in `types.ts`. No SvelteKit imports. |
+| `table/` | In-memory `Table` map, seed, relation snapshots, `find` / `select` / `query` / `insert` / `update` / `deleteRow`. |
 | `router/` | Parse `/todos/:id` patterns, match method + path, extract params. No SvelteKit imports. |
-| `handlers/` | MVP stub/static dispatcher. Future CRUD actions land here without changing hooks. |
-| `logs.ts` | In-memory ring buffer. |
+| `handlers/` | MVP stub/static dispatcher plus `validateMutating()`. Future CRUD actions land here without changing hooks. |
+| `logs.ts` | In-memory ring buffer: `appendLog` / `listLogs`. |
 | `http/` | CORS, control-plane predicate, data-plane handle. |
 
 Shared DTOs the inspector may import live in `src/lib/types/` (for example `LogEntry`). No store, no `fs`, no env reads there.
 
 ## Testing
 
-Unit tests use Vitest (`npm test`). Config lives in `vite.config.ts`: `include` is `src/**/*.test.ts`, `environment` is `node`. Colocate `*.test.ts` next to the module under test (for example `src/lib/server/model/index.test.ts` for compile and `validate()`, `src/lib/server/table/index.test.ts` for seed and relations).
+Unit tests use Vitest (`npm test`). Config lives in `vite.config.ts`: `include` is `src/**/*.test.ts`, `environment` is `node`. Colocate `*.test.ts` next to the module under test (for example `src/lib/server/model/index.test.ts` for compile, `src/lib/server/model/validate/validate.test.ts` for `validate()`, `src/lib/server/table/index.test.ts` for seed).
 
 `prepare` installs Husky. `.husky/pre-commit` runs `npm test`; a failing suite blocks the commit.
 
@@ -87,7 +97,7 @@ This package is shaped for `npx`:
 - `src/routes/inspector/logs/+server.ts` — `GET` JSON for a ~1s client poll.
 - `src/routes/inspector/+page.svelte` — master/detail logs. Never import `$lib/server` from the page.
 - `src/routes/inspector/tables/+page.server.ts` — `load` returns seeded table names via `listTables()`.
-- `src/routes/inspector/tables/[table]/+page.server.ts` — `load` queries `TableStore` (search, typed filters, offset pagination); form actions `create` / `update` / `delete` call `insert` / `update` / `delete`. Unknown table is **404**.
+- `src/routes/inspector/tables/[table]/+page.server.ts` — `load` queries a `Table` (search, typed filters, offset pagination); form actions `create` / `update` / `delete` call `insert` / `update` / `deleteRow`. Unknown table is **404**.
 - `src/routes/inspector/tables/+page.svelte` and `src/routes/inspector/tables/[table]/+page.svelte` — table list and unstyled browser. Never import `$lib/server` from the page.
 
-Inspector table pages are control-plane (`/_nipuu/tables/...`). They call `initRuntime()` only to ensure seed ran, then use `getTable()` / `listTables()`. They never call `Runtime.handle()`, never match `ROUTE`, and are not appended to the mock request log.
+Inspector table pages are control-plane (`/_nipuu/tables/...`). They call `initRuntime()` only to ensure seed ran, then use `getTable()` / `listTables()`. They never call `handleRequest()`, never match `ROUTE`, and are not appended to the mock request log.

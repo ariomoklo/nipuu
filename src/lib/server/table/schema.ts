@@ -1,21 +1,27 @@
 import type { FieldSchema } from '$lib/server/model/types';
 
-class SchemaStore {
-  private schemas: Map<string, FieldSchema> = new Map();
+const SCHEMA_KEY = Symbol.for('nipuu.schema');
 
-  /** get schema by key. <table>.<field> */
-  get(key: string): FieldSchema | undefined {
-    return this.schemas.get(key);
-  }
+type GlobalSchema = typeof globalThis & {
+	[SCHEMA_KEY]?: Map<string, FieldSchema>;
+};
 
-  /** add schema to store. <table>.<field> */
-  add(key: string, schema: FieldSchema): void {
-    this.schemas.set(key, schema);
-  }
-
-  clear(): void {
-    this.schemas.clear();
-  }
+function schemas(): Map<string, FieldSchema> {
+	const global = globalThis as GlobalSchema;
+	if (!global[SCHEMA_KEY]) global[SCHEMA_KEY] = new Map();
+	return global[SCHEMA_KEY];
 }
 
-export default new SchemaStore();
+/** get schema by key. <table>.<field> */
+export function getSchema(key: string): FieldSchema | undefined {
+	return schemas().get(key);
+}
+
+/** add schema to store. <table>.<field> */
+export function addSchema(key: string, schema: FieldSchema): void {
+	schemas().set(key, schema);
+}
+
+export function clearSchemas(): void {
+	schemas().clear();
+}

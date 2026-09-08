@@ -9,6 +9,7 @@ export function sortByForeignKey(schemas: Schema[]): Schema[] {
 		for (const field of Object.values(table.fields)) {
 			if (field.rel) related.add(field.rel.table);
 		}
+
 		deps.set(table.name, [...related]);
 	}
 
@@ -21,6 +22,7 @@ export function sortByForeignKey(schemas: Schema[]): Schema[] {
 		if (visiting.has(name)) {
 			throw new Error(`Circular relation involving table "${name}"`);
 		}
+
 		visiting.add(name);
 		for (const dep of deps.get(name) ?? []) visit(dep);
 		visiting.delete(name);

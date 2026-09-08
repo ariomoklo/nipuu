@@ -1,18 +1,9 @@
-import type { FieldSchema, Row, Schema } from '$lib/server/model/types';
+import type { FieldSchema, Row } from '$lib/server/model/types';
+import { on, trackDestroy, type Table } from '$lib/server/table/lifecycle';
 import { isRelationValue, omitRow } from '$lib/server/table/row';
 
-export type RelatableStore = {
-	schema: Schema;
-	storage: Row[];
-	trackDestroy(unsub: () => void): void;
-	on(event: 'update' | 'upsert', callback: (row: Row, index: number) => void): () => void;
-};
-
-export function bindRelations(
-	store: RelatableStore,
-	tables: { get(name: string): RelatableStore | undefined }
-) {
-	for (const field of Object.values(store.schema.fields)) {
+export function bindRelations(table: Table, tables: Map<string, Table>) {
+	for (const field of Object.values(table.schema.fields)) {
 		if (!field.rel) continue;
 
 		const related = tables.get(field.rel.table);
@@ -23,19 +14,16 @@ export function bindRelations(
 		}
 
 		const sync = (sourceRow: Row, sourceIndex: number) => {
-			syncRelation(store, field, sourceRow, sourceIndex);
+			syncRelation(table, field, sourceRow, sourceIndex);
 		};
 
-		store.trackDestroy(related.on('update', sync));
-		store.trackDestroy(related.on('upsert', sync));
+		trackDestroy(table, on(related, 'update', sync));
+		trackDestroy(table, on(related, 'upsert', sync));
 	}
 }
 
-export function hydrateRelations(
-	store: RelatableStore,
-	tables: { get(name: string): RelatableStore | undefined }
-) {
-	for (const field of Object.values(store.schema.fields)) {
+export function hydrateRelations(table: Table, tables: Map<string, Table>) {
+	for (const field of Object.values(table.schema.fields)) {
 		if (!field.rel) continue;
 
 		const related = tables.get(field.rel.table);
@@ -45,24 +33,19 @@ export function hydrateRelations(
 			);
 		}
 
-		for (const row of store.storage) {
+		for (const row of table.rows) {
 			const item = row[field.name];
 			if (!item?.hasRelation || !isRelationValue(item.value)) continue;
-			const source = related.storage[item.value.index];
+			const source = related.rows[item.value.index];
 			if (!source) continue;
 			item.value = { index: item.value.index, row: omitRow(source, field.rel.omit) };
 		}
 	}
 }
 
-export function syncRelation(
-	store: RelatableStore,
-	field: FieldSchema,
-	sourceRow: Row,
-	sourceIndex: number
-) {
+export function syncRelation(table: Table, field: FieldSchema, sourceRow: Row, sourceIndex: number) {
 	const omit = field.rel?.omit ?? [];
-	for (const row of store.storage) {
+	for (const row of table.rows) {
 		const item = row[field.name];
 		if (!item?.hasRelation || !isRelationValue(item.value)) continue;
 		if (item.value.index !== sourceIndex) continue;

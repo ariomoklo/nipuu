@@ -1,18 +1,26 @@
 import type { LogEntry } from '$lib/types';
 
 const MAX_LOGS = 200;
+const LOGS_KEY = Symbol.for('nipuu.logs');
 
-export class LogStore {
-	#entries: LogEntry[] = [];
+type GlobalLogs = typeof globalThis & {
+	[LOGS_KEY]?: LogEntry[];
+};
 
-	append(entry: LogEntry): void {
-		this.#entries.unshift(entry);
-		if (this.#entries.length > MAX_LOGS) {
-			this.#entries.length = MAX_LOGS;
-		}
+function entries(): LogEntry[] {
+	const global = globalThis as GlobalLogs;
+	if (!global[LOGS_KEY]) global[LOGS_KEY] = [];
+	return global[LOGS_KEY];
+}
+
+export function appendLog(entry: LogEntry): void {
+	const logs = entries();
+	logs.unshift(entry);
+	if (logs.length > MAX_LOGS) {
+		logs.length = MAX_LOGS;
 	}
+}
 
-	list(): LogEntry[] {
-		return this.#entries.slice();
-	}
+export function listLogs(): LogEntry[] {
+	return entries().slice();
 }

@@ -1,7 +1,8 @@
 import { json } from '@sveltejs/kit';
+import { listLogs } from '$lib/server/logs';
 import { initRuntime } from '$lib/server/runtime';
 
 export async function GET() {
-	const runtime = await initRuntime();
-	return json({ logs: runtime.logs.list() });
+	await initRuntime();
+	return json({ logs: listLogs() });
 }
