@@ -5,7 +5,7 @@ export const MODEL = {
       .string()
       .required()
       .factory(({ index }) => `Todo ${index}`),
-    owner: t.id.uuid().required().rel("users", "id"),
+    owner: t.id.uuid().required().rel("users", { field: "id" }),
     completed: t.boolean().default(false),
   }),
   users: (t) => ({

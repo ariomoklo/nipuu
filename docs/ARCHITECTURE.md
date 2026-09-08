@@ -38,9 +38,10 @@ All mutable process state lives under `src/lib/server/` and is imported only fro
 
 | Module | Role |
 |---|---|
-| `runtime.ts` | `initRuntime()` / `getRuntime()` — load config, compile MODEL, seed, hold router + logs. Singleton on `globalThis` so Vite HMR does not re-seed. |
+| `runtime/` | `initRuntime()` / `getRuntime()` — load config, compile MODEL, seed, hold router + logs. Singleton on `globalThis` so Vite HMR does not re-seed. Request body and mutating-validation helpers live in `utils.ts`. |
 | `config.ts` | `pathToFileURL` + dynamic import of `NIPUU_CONFIG`. Fail fast if `MODEL` / `ROUTE` are missing. |
-| `model/` | Fluent factory, compile, in-memory store, `validate()`. No SvelteKit imports. |
+| `model/` | Fluent factory, compile, `validate()`. Types in `types.ts`. No SvelteKit imports. |
+| `table/` | In-memory `TableStore` map, seed, relation snapshots, select/find projection. |
 | `router/` | Parse `/todos/:id` patterns, match method + path, extract params. No SvelteKit imports. |
 | `handlers/` | MVP stub/static dispatcher. Future CRUD actions land here without changing hooks. |
 | `logs.ts` | In-memory ring buffer. |
@@ -50,7 +51,7 @@ Shared DTOs the inspector may import live in `src/lib/types/` (for example `LogE
 
 ## Testing
 
-Unit tests use Vitest (`npm test`). Config lives in `vite.config.ts`: `include` is `src/**/*.test.ts`, `environment` is `node`. Colocate `*.test.ts` next to the module under test (for example `src/lib/server/model/index.test.ts` for compile, seed, and `validate()`).
+Unit tests use Vitest (`npm test`). Config lives in `vite.config.ts`: `include` is `src/**/*.test.ts`, `environment` is `node`. Colocate `*.test.ts` next to the module under test (for example `src/lib/server/model/index.test.ts` for compile and `validate()`, `src/lib/server/table/index.test.ts` for seed and relations).
 
 `prepare` installs Husky. `.husky/pre-commit` runs `npm test`; a failing suite blocks the commit.
 

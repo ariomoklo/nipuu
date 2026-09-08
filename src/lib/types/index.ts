@@ -14,6 +14,10 @@ export type LogEntry = {
 	duration: number;
 };
 
+export type LifecycleListener<I extends any[], O> = (...args: I) => O;
+export type LifecycleEvents<T extends string> = Record<T, Set<LifecycleListener<any[], void>>>
+export type SetItem<T> = T extends Set<infer I> ? I : never;
+
 export type RouteAction = 'search' | 'find' | 'upsert' | 'update' | 'delete';
 
 export type RouteHandlerObject = {

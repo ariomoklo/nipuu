@@ -1,40 +1,34 @@
 import type { RequestEvent } from '@sveltejs/kit';
-import { loadConfig, readSeedCount, type NipuuConfig } from '$lib/server/config';
-import { dispatch, notFound, validationError } from '$lib/server/handlers';
+import { loadConfig, readSeedCount, type ConfigDefinition } from '$lib/server/runtime/config';
+import { dispatch, notFound } from '$lib/server/handlers';
 import { LogStore } from '$lib/server/logs';
-import {
-	compileModel,
-	seedStore,
-	validate,
-	type CompiledTable,
-	type Store
-} from '$lib/server/model';
+import { generateSchemas, type Store, type Schema } from '$lib/server/model';
 import { matchRoute } from '$lib/server/router';
+import { peekBody, readBody, validateMutating } from '$lib/server/runtime/utils';
+import { createTables, toStore } from '$lib/server/table';
 import type { LogEntry, RouteHandler } from '$lib/types';
 
 const RUNTIME_KEY = Symbol.for('nipuu.runtime');
 const RUNTIME_PROMISE_KEY = Symbol.for('nipuu.runtime.promise');
 
 type GlobalRuntime = typeof globalThis & {
-	[RUNTIME_KEY]?: NipuuRuntime;
-	[RUNTIME_PROMISE_KEY]?: Promise<NipuuRuntime>;
+	[RUNTIME_KEY]?: Runtime;
+	[RUNTIME_PROMISE_KEY]?: Promise<Runtime>;
 };
 
-export class NipuuRuntime {
-	#config: NipuuConfig;
-	#tables: CompiledTable[];
-	#store: Store;
+export class Runtime {
+	#config: ConfigDefinition;
+	#tables: Schema[];
 	logs: LogStore;
 
-	constructor(config: NipuuConfig, tables: CompiledTable[], store: Store, logs: LogStore) {
+	constructor(config: ConfigDefinition, tables: Schema[], logs: LogStore) {
 		this.#config = config;
 		this.#tables = tables;
-		this.#store = store;
 		this.logs = logs;
 	}
 
 	get store(): Store {
-		return this.#store;
+		return toStore();
 	}
 
 	async handle(event: RequestEvent): Promise<Response> {
@@ -58,7 +52,7 @@ export class NipuuRuntime {
 		} else {
 			Object.assign(params, matched.params);
 			const handler = matched.handler as RouteHandler;
-			const validation = validateMutating(this.#tables, this.#store, method, handler, requestBody);
+			const validation = validateMutating(this.#tables, this.store, method, handler, requestBody);
 			response = validation ?? dispatch(handler, { params, queries });
 		}
 
@@ -83,56 +77,15 @@ export class NipuuRuntime {
 	}
 }
 
-function validateMutating(
-	tables: CompiledTable[],
-	store: Store,
-	method: string,
-	handler: RouteHandler,
-	body: unknown
-): Response | null {
-	if (method !== 'POST' && method !== 'PUT') return null;
-	if (typeof handler !== 'object' || handler === null) return null;
-	if (typeof handler.model !== 'string') return null;
-
-	const payload = method === 'PUT' && body == null ? {} : body;
-	const result = validate(tables, store, handler.model, payload, { partial: method === 'PUT' });
-	if (!result.ok) return validationError(result.errors);
-	return null;
-}
-
-async function readBody(request: Request): Promise<unknown> {
-	const raw = await request.text();
-	if (!raw) return null;
-	try {
-		return JSON.parse(raw);
-	} catch {
-		return raw;
-	}
-}
-
-async function peekBody(response: Response): Promise<unknown> {
-	const clone = response.clone();
-	const raw = await clone.text();
-	if (!raw) return null;
-	const contentType = response.headers.get('content-type') ?? '';
-	if (contentType.includes('application/json')) {
-		try {
-			return JSON.parse(raw);
-		} catch {
-			return raw;
-		}
-	}
-	return raw;
-}
-
-async function createRuntime(): Promise<NipuuRuntime> {
+async function createRuntime(): Promise<Runtime> {
 	const config = await loadConfig();
-	const tables = compileModel(config.MODEL);
-	const store = seedStore(tables, readSeedCount());
-	return new NipuuRuntime(config, tables, store, new LogStore());
+	const schemas = generateSchemas(config.MODEL);
+	createTables(schemas, readSeedCount());
+
+	return new Runtime(config, schemas, new LogStore());
 }
 
-export async function initRuntime(): Promise<NipuuRuntime> {
+export async function initRuntime(): Promise<Runtime> {
 	const global = globalThis as GlobalRuntime;
 	if (global[RUNTIME_KEY]) return global[RUNTIME_KEY];
 	if (!global[RUNTIME_PROMISE_KEY]) {
@@ -144,7 +97,7 @@ export async function initRuntime(): Promise<NipuuRuntime> {
 	return global[RUNTIME_PROMISE_KEY];
 }
 
-export function getRuntime(): NipuuRuntime {
+export function getRuntime(): Runtime {
 	const runtime = (globalThis as GlobalRuntime)[RUNTIME_KEY];
 	if (!runtime) {
 		throw new Error('Nipuu runtime is not initialized');

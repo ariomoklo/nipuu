@@ -95,7 +95,7 @@ const server = await createServer({
 await server.listen();
 
 try {
-	const runtime = await server.ssrLoadModule('/src/lib/server/runtime.ts');
+	const runtime = await server.ssrLoadModule('/src/lib/server/runtime/index.ts');
 	await runtime.initRuntime();
 } catch (error) {
 	console.error(error);

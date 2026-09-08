@@ -1,41 +1,28 @@
-export type FieldKind = 'string' | 'boolean' | 'index' | 'uuid';
+import type {
+	FieldSchema,
+	Schema,
+	FactoryContext,
+	FieldKind,
+	ModelDefinition,
+	TableFieldBuilder,
+	Payload,
+	Store,
+	ValidationResult,
+	FieldBuilder
+} from '$lib/server/model/types';
+import { validators } from '$lib/server/model/validation';
+import schemaStore from '$lib/server/table/schema';
 
-export type FactoryContext = { index: number };
-
-export type CompiledField = {
-	name: string;
-	type: FieldKind;
-	required: boolean;
-	hasDefault: boolean;
-	defaultValue: unknown;
-	factory?: (ctx: FactoryContext) => unknown;
-	rel?: { table: string; field: string };
-};
-
-export type CompiledTable = {
-	name: string;
-	fields: Record<string, CompiledField>;
-};
-
-export type Row = Record<string, unknown>;
-export type Store = Record<string, Row[]>;
-
+export * from '$lib/server/model/types';
 export const compileField: unique symbol = Symbol('nipuu.compileField');
 
-export type Field = {
-	required(): Field;
-	default(value: unknown): Field;
-	factory(fn: (ctx: FactoryContext) => unknown): Field;
-	rel(table: string, field: string): Field;
-};
-
-export class FieldBuilder implements Field {
+export class Field implements FieldBuilder {
 	#type: FieldKind;
 	#required = false;
 	#hasDefault = false;
 	#defaultValue: unknown;
 	#factory?: (ctx: FactoryContext) => unknown;
-	#rel?: { table: string; field: string };
+	#rel?: { table: string; field: string; omit: string[] };
 
 	constructor(type: FieldKind) {
 		this.#type = type;
@@ -57,12 +44,12 @@ export class FieldBuilder implements Field {
 		return this;
 	}
 
-	rel(table: string, field: string): this {
-		this.#rel = { table, field };
+	rel(table: string, options: { field: string; omit?: string[] }): this {
+		this.#rel = { table, field: options.field, omit: options.omit ?? [] };
 		return this;
 	}
 
-	[compileField](name: string): CompiledField {
+	[compileField](name: string): FieldSchema {
 		return {
 			name,
 			type: this.#type,
@@ -73,136 +60,42 @@ export class FieldBuilder implements Field {
 			rel: this.#rel
 		};
 	}
+
+	static builder(): TableFieldBuilder {
+		return {
+			string: () => new Field('string'),
+			boolean: () => new Field('boolean'),
+			number: () => new Field('number'),
+			id: {
+				index: () => new Field('id.index'),
+				uuid: () => new Field('id.uuid')
+			}
+		};
+	}
 }
 
-export type ModelT = {
-	string: () => Field;
-	boolean: () => Field;
-	id: {
-		index: () => Field;
-		uuid: () => Field;
-	};
-};
+export function generateSchemas(definition: ModelDefinition): Schema[] {
+	const t = Field.builder();
 
-export type ModelDefinition = Record<string, (t: ModelT) => Record<string, Field>>;
-
-export function createT(): ModelT {
-	return {
-		string: () => new FieldBuilder('string'),
-		boolean: () => new FieldBuilder('boolean'),
-		id: {
-			index: () => new FieldBuilder('index'),
-			uuid: () => new FieldBuilder('uuid')
-		}
-	};
-}
-
-export function compileModel(definition: ModelDefinition): CompiledTable[] {
-	const t = createT();
 	return Object.entries(definition).map(([name, factory]) => {
 		const built = factory(t);
-		const fields: Record<string, CompiledField> = {};
+		const fields: Record<string, FieldSchema> = {};
+
 		for (const [fieldName, builder] of Object.entries(built)) {
-			if (!(builder instanceof FieldBuilder)) {
+			if (!(builder instanceof Field)) {
 				throw new Error(`MODEL.${name}.${fieldName} must be a field builder`);
 			}
+
 			fields[fieldName] = builder[compileField](fieldName);
+			schemaStore.add(`${name}.${fieldName}`, fields[fieldName]);
 		}
+
 		return { name, fields };
 	});
 }
 
-export function sortTablesByFk(tables: CompiledTable[]): CompiledTable[] {
-	const byName = new Map(tables.map((table) => [table.name, table]));
-	const deps = new Map<string, string[]>();
-
-	for (const table of tables) {
-		const related = new Set<string>();
-		for (const field of Object.values(table.fields)) {
-			if (field.rel) related.add(field.rel.table);
-		}
-		deps.set(table.name, [...related]);
-	}
-
-	const sorted: CompiledTable[] = [];
-	const visiting = new Set<string>();
-	const visited = new Set<string>();
-
-	const visit = (name: string) => {
-		if (visited.has(name)) return;
-		if (visiting.has(name)) {
-			throw new Error(`Circular relation involving table "${name}"`);
-		}
-		visiting.add(name);
-		for (const dep of deps.get(name) ?? []) visit(dep);
-		visiting.delete(name);
-		visited.add(name);
-		const table = byName.get(name);
-		if (table) sorted.push(table);
-	};
-
-	for (const table of tables) visit(table.name);
-	return sorted;
-}
-
-function seedFieldValue(field: CompiledField, index: number, store: Store): unknown {
-	if (field.rel) {
-		const related = store[field.rel.table] ?? [];
-		if (related.length === 0) {
-			throw new Error(
-				`Cannot seed ${field.name}: related table "${field.rel.table}" has no rows`
-			);
-		}
-		const row = related[Math.floor(Math.random() * related.length)];
-		return row[field.rel.field];
-	}
-
-	if (field.type === 'index') return index;
-	if (field.type === 'uuid') return crypto.randomUUID();
-	if (field.factory) return field.factory({ index });
-	if (field.hasDefault) return field.defaultValue;
-	if (field.type === 'boolean') return false;
-	if (field.type === 'string') return '';
-	return null;
-}
-
-export function seedStore(tables: CompiledTable[], count: number): Store {
-	const store: Store = {};
-	for (const table of sortTablesByFk(tables)) {
-		const rows: Row[] = [];
-		for (let index = 1; index <= count; index += 1) {
-			const row: Row = {};
-			for (const field of Object.values(table.fields)) {
-				row[field.name] = seedFieldValue(field, index, store);
-			}
-			rows.push(row);
-		}
-		store[table.name] = rows;
-	}
-	return store;
-}
-
-export type ValidationResult =
-	| { ok: true; data: Row }
-	| { ok: false; errors: string[] };
-
-function typeError(field: CompiledField, value: unknown): string | null {
-	if (field.type === 'string' || field.type === 'uuid') {
-		return typeof value === 'string' ? null : `${field.name} must be a string`;
-	}
-	if (field.type === 'boolean') {
-		return typeof value === 'boolean' ? null : `${field.name} must be a boolean`;
-	}
-	if (field.type === 'index') {
-		return typeof value === 'number' && Number.isInteger(value)
-			? null
-			: `${field.name} must be an integer`;
-	}
-	return null;
-}
-
 export function validate(
-	tables: CompiledTable[],
+	tables: Schema[],
 	store: Store,
 	tableName: string,
 	payload: unknown,
@@ -217,9 +110,9 @@ export function validate(
 		return { ok: false, errors: ['Body must be an object'] };
 	}
 
-	const body = payload as Row;
+	const body = payload as Payload;
 	const errors: string[] = [];
-	const data: Row = {};
+	const data: Payload = {};
 	const partial = options.partial === true;
 
 	for (const field of Object.values(table.fields)) {
@@ -237,12 +130,18 @@ export function validate(
 		}
 
 		const value = body[field.name];
-		const mismatch = typeError(field, value);
-		if (mismatch) errors.push(mismatch);
+		const valid = validators[field.type](value, field);
+		if (!valid.ok) {
+			const message = valid.message.startsWith('Must')
+				? `${field.name} ${valid.message[0].toLowerCase()}${valid.message.slice(1)}`
+				: valid.message;
+			errors.push(message);
+			continue;
+		}
 
 		if (field.rel && value != null) {
 			const related = store[field.rel.table] ?? [];
-			const exists = related.some((row) => row[field.rel!.field] === value);
+			const exists = related.some((row) => row[field.rel!.field]?.value === value);
 			if (!exists) {
 				errors.push(
 					`${field.name} does not reference an existing ${field.rel.table}.${field.rel.field}`
