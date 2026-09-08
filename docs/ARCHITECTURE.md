@@ -86,3 +86,8 @@ This package is shaped for `npx`:
 - `src/routes/inspector/+page.server.ts` — `load` returns the current log list.
 - `src/routes/inspector/logs/+server.ts` — `GET` JSON for a ~1s client poll.
 - `src/routes/inspector/+page.svelte` — master/detail logs. Never import `$lib/server` from the page.
+- `src/routes/inspector/tables/+page.server.ts` — `load` returns seeded table names via `listTables()`.
+- `src/routes/inspector/tables/[table]/+page.server.ts` — `load` queries `TableStore` (search, typed filters, offset pagination); form actions `create` / `update` / `delete` call `insert` / `update` / `delete`. Unknown table is **404**.
+- `src/routes/inspector/tables/+page.svelte` and `src/routes/inspector/tables/[table]/+page.svelte` — table list and unstyled browser. Never import `$lib/server` from the page.
+
+Inspector table pages are control-plane (`/_nipuu/tables/...`). They call `initRuntime()` only to ensure seed ran, then use `getTable()` / `listTables()`. They never call `Runtime.handle()`, never match `ROUTE`, and are not appended to the mock request log.

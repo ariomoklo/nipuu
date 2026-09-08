@@ -8,6 +8,13 @@ import type {
 import type { LifecycleListener, SetItem } from '$lib/types';
 import { toFilters, filter as FilterHandler, type FilterSchema } from '$lib/server/table/filter';
 import { sortByForeignKey } from '$lib/server/table/order';
+import {
+  clampLimit,
+  clampPage,
+  rowMatchesSearch,
+  TABLE_PAGE_DEFAULT,
+  TABLE_PAGE_MAX
+} from '$lib/server/table/query';
 import { bindRelations, hydrateRelations } from '$lib/server/table/relations';
 import {
   createFieldItem,
@@ -17,8 +24,7 @@ import {
   projectRow
 } from '$lib/server/table/row';
 import schemaStore from '$lib/server/table/schema';
-
-const MAX_SELECT = 100;
+import type { TableQueryPage } from '$lib/types/table';
 
 const TABLES = new Map<string, TableStore>();
 
@@ -106,7 +112,34 @@ export class TableStore {
   select(filters: FilterSchema[] = []): Payload[] {
     const found = this.lookup('filter', filters);
     if (!Array.isArray(found)) return [];
-    return found.slice(0, MAX_SELECT).map(projectRow);
+    return found.slice(0, TABLE_PAGE_MAX).map(projectRow);
+  }
+
+  query(input: {
+    filters?: FilterSchema[];
+    search?: string;
+    page?: number;
+    limit?: number;
+  } = {}): TableQueryPage {
+    const filters = input.filters ?? [];
+    const search = input.search?.trim() ?? '';
+    const page = clampPage(input.page ?? 1);
+    const limit = clampLimit(input.limit ?? TABLE_PAGE_DEFAULT);
+
+    const found = this.lookup('filter', filters);
+    const matched = Array.isArray(found) ? found : [];
+    const searched = search
+      ? matched.filter((row) => rowMatchesSearch(row, this.schema, search))
+      : matched;
+    const total = searched.length;
+    const start = (page - 1) * limit;
+
+    return {
+      rows: searched.slice(start, start + limit).map(projectRow),
+      total,
+      page,
+      limit
+    };
   }
 
   insert(payload: Payload): Row {
@@ -140,6 +173,13 @@ export class TableStore {
     this.applyPatch(found.row, patch);
     this.rows[found.index] = found.row;
     void this.broadcast('update', found.row, found.index);
+    return found.row;
+  }
+
+  delete(cond: Record<string, unknown> | FilterSchema[]): Row | undefined {
+    const found = this.lookup('find', toFilters(cond));
+    if (!found || Array.isArray(found)) return undefined;
+    this.rows.splice(found.index, 1);
     return found.row;
   }
 
@@ -328,6 +368,10 @@ export function getTable(name: string): TableStore | undefined {
   return TABLES.get(name);
 }
 
+export function listTables(): string[] {
+  return [...TABLES.keys()];
+}
+
 export function toStore(): Store {
   const store: Store = {};
   for (const [name, table] of TABLES) {
@@ -342,3 +386,10 @@ export function flushAll(): Promise<void> {
 
 export { sortByForeignKey as sortTablesByFk } from '$lib/server/table/order';
 export type { FilterSchema } from '$lib/server/table/filter';
+export {
+  parseTableQuery,
+  payloadFromForm,
+  toFieldMeta,
+  TABLE_PAGE_DEFAULT,
+  TABLE_PAGE_MAX
+} from '$lib/server/table/query';

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { INSPECTOR_URL } from '$lib/inspector';
 	import type { LogEntry } from '$lib/types';
 
 	let { data } = $props();
@@ -37,6 +38,8 @@
 </svelte:head>
 
 <h1>Nipuu Inspector</h1>
+
+<p><a href="{INSPECTOR_URL}/tables">Tables</a></p>
 
 {#if logs.length === 0}
 	<p>No requests yet.</p>
