@@ -7,7 +7,7 @@ Nipuu is a mock API CLI hosted by SvelteKit. User APIs are runtime data (`MODEL`
 Treat SvelteKit as two planes, not as a file-router for user APIs.
 
 - **Control plane** — `/_nipuu`, `/_app`, `/@…`, `/src`, `/node_modules`, and other Vite/SvelteKit internals. These call `resolve` and use the file router.
-- **Data plane** — every other path. `handle` matches `ROUTE`, stubs or returns a static body, logs, and returns a `Response`. It never calls `resolve`.
+- **Data plane** — every other path. `handle` matches `ROUTE`, runs the route action, logs, and returns a `Response`. It never calls `resolve`.
 
 Unmatched method/path pairs return **404** `{ "error": "Not Found" }`.
 
@@ -24,7 +24,7 @@ cli.js → Vite / SvelteKit → hooks.server.ts (sequence)
 
 1. **handleCors** — `OPTIONS` preflight and CORS headers on every outgoing response.
 2. **handleControlPlane** — continues the sequence. Control-plane paths reach the file router; data-plane paths reach `handleDataPlane`.
-3. **handleDataPlane** — if the path is control-plane, `resolve(event)`. Otherwise `initRuntime()` then `handleRequest(event)` always returns a `Response` (200 stub, static body, 400 validation, or 404).
+3. **handleDataPlane** — if the path is control-plane, `resolve(event)`. Otherwise `initRuntime()` then `handleRequest(event)` always returns a `Response` (action result, static body, 400 validation, or 404).
 
 `App.Locals` holds only `requestId` and `startedAt`. Do not put the store on `locals`.
 
@@ -49,11 +49,11 @@ Process-lifetime state (config, compiled schemas, tables, logs, field-schema reg
 |---|---|
 | `runtime/` | `initRuntime()` loads config, compiles MODEL, seeds tables. `handleRequest(event)` is the data-plane entry. Config and schemas live on `globalThis`. |
 | `runtime/config.ts` | `pathToFileURL` + dynamic import of `NIPUU_CONFIG`. Fail fast if `MODEL` / `ROUTE` are missing. |
-| `runtime/handle.ts` | Match `ROUTE`, validate mutating POST/PUT, dispatch, append a log. Body read/peek are unexported locals. |
+| `runtime/handle.ts` | Match `ROUTE`, dispatch, append a log. Body read/peek are unexported locals. |
 | `model/` | `generateSchemas()`, field factory, `validate()`. Types in `types.ts`. No SvelteKit imports. |
 | `table/` | In-memory `Table` map, seed, relation snapshots, `find` / `select` / `query` / `insert` / `update` / `deleteRow`. |
 | `router/` | Parse `/todos/:id` patterns, match method + path, extract params. No SvelteKit imports. |
-| `handlers/` | MVP stub/static dispatcher plus `validateMutating()`. Future CRUD actions land here without changing hooks. |
+| `handlers/` | Dispatch `static` / `search` / `find` / `upsert` / `update` / `delete`. Validation runs inside mutating actions. |
 | `logs.ts` | In-memory ring buffer: `appendLog` / `listLogs`. |
 | `http/` | CORS, control-plane predicate, data-plane handle. |
 
@@ -61,15 +61,19 @@ Shared DTOs the inspector may import live in `src/lib/types/` (for example `LogE
 
 ## Testing
 
-Unit tests use Vitest (`npm test`). Config lives in `vite.config.ts`: `include` is `src/**/*.test.ts`, `environment` is `node`. Colocate `*.test.ts` next to the module under test (for example `src/lib/server/model/index.test.ts` for compile, `src/lib/server/model/validate/validate.test.ts` for `validate()`, `src/lib/server/table/index.test.ts` for seed).
+Unit tests use Vitest (`npm test`, project `unit`). Config lives in `vite.config.ts`: `unit` includes `src/**/*.test.ts` except `src/tests/**`, `environment` is `node`. Colocate `*.test.ts` next to the module under test (for example `src/lib/server/model/index.test.ts` for compile, `src/lib/server/model/validate/validate.test.ts` for `validate()`, `src/lib/server/table/index.test.ts` for seed).
+
+Mock-server scenario tests (`npm run test:mock`, project `mock`) live in `src/tests/`. They start the CLI and `fetch` HTTP. See `src/tests/README.md` for flow and scenarios.
 
 `prepare` installs Husky. `.husky/pre-commit` runs `npm test`; a failing suite blocks the commit.
 
-## MVP data plane
+## Data plane
 
-- Config value is a string or number → `text/plain` body (`GET /` = `Hello!`).
-- Config value is an object → **200** stub `{ _nipuu: { matched, action, model, params, queries } }`.
-- `POST` (full) and `PUT` (partial) with a `model` run `validate()`. Failure is **400** and does not write rows.
+- Shorthand string or number handler → `text/plain` body.
+- `action: "static"` → `response` as the body (JSON for records, arrays, and `null`; `text/plain` for other primitives). Functions and missing `response` are **500**.
+- `search` / `find` / `upsert` / `update` / `delete` run against the in-memory table. `find` / `update` / `delete` miss is **404**. Unknown `action` or `model` is **400**.
+- `upsert` (full) and `update` (partial) call `validate()`. Failure is **400** and does not write rows.
+- Optional CRUD `response({ data, model })` maps the action result. `model` is the projected store.
 - Every data-plane request is logged. Control-plane requests are not logged as mock API calls.
 
 ## CLI and npx

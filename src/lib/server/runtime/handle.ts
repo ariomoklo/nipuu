@@ -1,9 +1,8 @@
 import type { RequestEvent } from '@sveltejs/kit';
-import { dispatch, notFound, validateMutating } from '$lib/server/handlers';
+import { dispatch, notFound } from '$lib/server/handlers';
 import { appendLog } from '$lib/server/logs';
 import { matchRoute } from '$lib/server/router';
-import { getConfig, getSchemas } from '$lib/server/runtime';
-import { toStore } from '$lib/server/table';
+import { getConfig } from '$lib/server/runtime';
 import type { LogEntry, RouteHandler } from '$lib/types';
 
 async function readBody(request: Request): Promise<unknown> {
@@ -53,8 +52,7 @@ export async function handleRequest(event: RequestEvent): Promise<Response> {
 	} else {
 		Object.assign(params, matched.params);
 		const handler = matched.handler as RouteHandler;
-		const validation = validateMutating(getSchemas(), toStore(), method, handler, requestBody);
-		response = validation ?? dispatch(handler, { params, queries });
+		response = dispatch(handler, { params, queries, body: requestBody });
 	}
 
 	const responseBody = await peekBody(response);

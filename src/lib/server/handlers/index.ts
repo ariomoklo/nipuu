@@ -1,59 +1,39 @@
-import { validate, type Schema, type Store } from '$lib/server/model';
-import type { RouteHandler, RouteHandlerObject } from '$lib/types';
-
-function json(data: unknown, status = 200): Response {
-	return new Response(JSON.stringify(data), {
-		status,
-		headers: { 'content-type': 'application/json' }
-	});
-}
-
-export type DispatchContext = {
-	params: Record<string, string>;
-	queries: Record<string, string>;
-};
+import { deleteAction } from '$lib/server/handlers/delete/delete';
+import { findAction } from '$lib/server/handlers/find/find';
+import { json, text } from '$lib/server/handlers/respond';
+import { searchAction } from '$lib/server/handlers/search/search';
+import type { DispatchContext } from '$lib/server/handlers/sources/sources';
+import { staticAction } from '$lib/server/handlers/static/static';
+import { updateAction } from '$lib/server/handlers/update/update';
+import { upsertAction } from '$lib/server/handlers/upsert/upsert';
+import type { RouteHandler } from '$lib/types';
 
 export function dispatch(handler: RouteHandler, context: DispatchContext): Response {
 	if (typeof handler === 'string' || typeof handler === 'number') {
-		return new Response(String(handler), {
-			status: 200,
-			headers: { 'content-type': 'text/plain; charset=utf-8' }
-		});
+		return text(handler);
 	}
 
-	const objectHandler = handler as RouteHandlerObject;
-	return json({
-		_nipuu: {
-			matched: true,
-			action: objectHandler.action,
-			model: objectHandler.model,
-			params: context.params,
-			queries: context.queries
-		}
-	});
+	if (typeof handler !== 'object' || handler === null) {
+		return json({ error: 'Unknown action' }, 400);
+	}
+
+	switch (handler.action) {
+		case 'static':
+			return staticAction(handler);
+		case 'search':
+			return searchAction(handler, context);
+		case 'find':
+			return findAction(handler, context);
+		case 'upsert':
+			return upsertAction(handler, context);
+		case 'update':
+			return updateAction(handler, context);
+		case 'delete':
+			return deleteAction(handler, context);
+		default:
+			return json({ error: 'Unknown action' }, 400);
+	}
 }
 
-export function notFound(): Response {
-	return json({ error: 'Not Found' }, 404);
-}
-
-export function validationError(errors: string[]): Response {
-	return json({ error: 'Validation failed', details: errors }, 400);
-}
-
-export function validateMutating(
-	tables: Schema[],
-	store: Store,
-	method: string,
-	handler: RouteHandler,
-	body: unknown
-): Response | null {
-	if (method !== 'POST' && method !== 'PUT') return null;
-	if (typeof handler !== 'object' || handler === null) return null;
-	if (typeof handler.model !== 'string') return null;
-
-	const payload = method === 'PUT' && body == null ? {} : body;
-	const result = validate(tables, store, handler.model, payload, { partial: method === 'PUT' });
-	if (!result.ok) return validationError(result.errors);
-	return null;
-}
+export { notFound, validationError } from '$lib/server/handlers/respond';
+export type { DispatchContext };

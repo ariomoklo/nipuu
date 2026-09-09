@@ -23,7 +23,10 @@ export const MODEL = {
 
 export const ROUTE = {
   "/": {
-    GET: "Hello!",
+    GET: {
+      action: "static",
+      response: "Hello!",
+    },
   },
   "/todos": {
     GET: {

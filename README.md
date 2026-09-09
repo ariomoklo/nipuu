@@ -28,6 +28,7 @@ Open `http://localhost:4210/_nipuu` for the inspector. All other paths are the m
 
 ```sh
 npm test
+npm run test:mock
 ```
 
-Vitest runs colocated `src/**/*.test.ts` files. A pre-commit hook runs `npm test`; the commit is rejected if tests fail.
+`npm test` runs colocated unit tests. `npm run test:mock` runs mock-server HTTP scenarios in `src/tests/`. See `src/tests/README.md`. A pre-commit hook runs `npm test`; the commit is rejected if tests fail.

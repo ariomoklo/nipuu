@@ -1,6 +1,6 @@
 import adapter from '@sveltejs/adapter-auto';
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 export default defineConfig({
 	plugins: [
@@ -18,7 +18,24 @@ export default defineConfig({
 		})
 	],
 	test: {
-		include: ['src/**/*.test.ts'],
-		environment: 'node'
+		environment: 'node',
+		projects: [
+			{
+				test: {
+					name: 'unit',
+					include: ['src/**/*.test.ts'],
+					exclude: [...configDefaults.exclude, 'src/tests/**']
+				}
+			},
+			{
+				test: {
+					name: 'mock',
+					include: ['src/tests/**/*.test.ts'],
+					fileParallelism: false,
+					hookTimeout: 30_000,
+					testTimeout: 30_000
+				}
+			}
+		]
 	}
 });

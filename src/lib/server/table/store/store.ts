@@ -93,7 +93,7 @@ function applyPatch(table: Table, row: Row, patch: Payload) {
 function detectID(table: Table, payload: Payload): Record<string, unknown> {
 	const ids: Record<string, unknown> = {};
 	for (const schema of Object.values(table.schema.fields)) {
-		if (!schema.type.startsWith('id.')) continue;
+		if (!schema.type.startsWith('id.') || schema.rel) continue;
 		if (!(schema.name in payload)) continue;
 		const raw = payload[schema.name];
 		ids[schema.name] = isFieldItem(raw) ? raw.value : raw;

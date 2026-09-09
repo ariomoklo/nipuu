@@ -19,7 +19,8 @@ Before changing architecture, routes, MODEL/ROUTE behavior, the CLI, the inspect
 - Keep domain logic in `src/lib/server/**`. Do not put it in `hooks.server.ts` or client pages.
 - The client never imports `$lib/server`.
 - Always import project modules with `$lib/...` aliases. Never use relative imports (`./` or `../`). The only exception is SvelteKit-generated `./$types` in route files.
-- Unit tests: Vitest, colocated `*.test.ts` under `src/`. Vitest scans `src/**/*.test.ts`. Run `npm test`. Tests use `$lib/...` imports. Pre-commit runs `npm test` and must pass.
+- Unit tests: Vitest, colocated `*.test.ts` under `src/`. Run `npm test` (`--project unit`). Tests use `$lib/...` imports. Pre-commit runs `npm test` and must pass.
+- Mock-server scenario tests: `src/tests/`. Run `npm run test:mock`. See `src/tests/README.md`.
 - Smallest implementation that matches the current contract. Do not build future work from `plans/` unless that plan is the task.
 - Prefer functions, plain data, and `globalThis` process state over classes. Do not add classes or OOP hierarchies. Fluent MODEL builders are factory functions, not class instances.
 - File layout: singular untested files stay in the parent folder. A use case with a test file or multiple implementation files gets a subdirectory. Module `index.ts` / `index.test.ts` stay at the module root.

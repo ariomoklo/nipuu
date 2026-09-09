@@ -18,11 +18,35 @@ export type LifecycleListener<I extends any[], O> = (...args: I) => O;
 export type LifecycleEvents<T extends string> = Record<T, Set<LifecycleListener<any[], void>>>
 export type SetItem<T> = T extends Set<infer I> ? I : never;
 
-export type RouteAction = 'search' | 'find' | 'upsert' | 'update' | 'delete';
+export type RouteAction = 'static' | 'search' | 'find' | 'upsert' | 'update' | 'delete';
+
+export type RouteSourceName = 'params' | 'queries' | 'body';
+
+export type RouteBy = 'equal' | 'include';
+
+export type RouteFieldRef = {
+	source: RouteSourceName;
+	key: string;
+	by?: RouteBy;
+};
 
 export type RouteHandlerObject = {
-	action?: string;
+	action?: RouteAction | string;
 	model?: string;
+	where?: Record<string, RouteFieldRef>;
+	filter?: Record<string, RouteFieldRef>;
+	sort?: {
+		sortBy?: RouteFieldRef;
+		orderBy?: RouteFieldRef;
+	};
+	pagination?: {
+		type?: string;
+		start?: RouteFieldRef;
+		end?: RouteFieldRef;
+		limit?: RouteFieldRef;
+	};
+	update?: Record<string, RouteFieldRef | ((row: Record<string, unknown>) => unknown)>;
+	response?: unknown;
 	[key: string]: unknown;
 };
 

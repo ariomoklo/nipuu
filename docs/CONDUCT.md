@@ -21,7 +21,7 @@ Read `docs/CONDUCT.md` and `docs/ARCHITECTURE.md` before changing architecture, 
 - `src/hooks.server.ts` only composes `sequence()`. Domain logic stays in `src/lib/server/**`.
 - The client never imports `$lib/server`. Shared DTOs live in `src/lib/types/`.
 - `App.Locals` is only `requestId` and `startedAt`.
-- Do not implement features that `docs/` and `plans/` mark as future work (action execution, persistence, inspector styling, SSE) unless a later plan in `plans/` is being executed.
+- Do not implement features that `docs/` and `plans/` mark as future work (persistence, inspector styling, SSE) unless a later plan in `plans/` is being executed.
 
 ## Functional style
 
@@ -68,8 +68,9 @@ export function resetTables() {
 
 ## Testing
 
-- Unit tests use Vitest. Run them with `npm test` (`vitest run`) or `npm run test:watch`.
-- Colocate tests next to the module as `*.test.ts` (for example `src/lib/server/model/index.test.ts`).
-- Vitest scans `src/**/*.test.ts`. Do not put unit tests outside `src/`.
-- Tests import project modules with `$lib/...` aliases, same as production code.
+- Unit tests use Vitest. Run them with `npm test` (`vitest run --project unit`) or `npm run test:watch`.
+- Colocate unit tests next to the module as `*.test.ts` (for example `src/lib/server/model/index.test.ts`).
+- The Vitest `unit` project scans `src/**/*.test.ts` and excludes `src/tests/**`. Do not put unit tests outside `src/`.
+- Unit tests import project modules with `$lib/...` aliases, same as production code.
+- Mock-server scenario tests live in `src/tests/`. Run them with `npm run test:mock`. See `src/tests/README.md` for flow and scenarios.
 - A Husky pre-commit hook runs `npm test`. The commit is rejected if tests fail. Do not skip the hook.

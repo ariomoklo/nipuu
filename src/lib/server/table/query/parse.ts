@@ -25,7 +25,7 @@ function isIdentityField(field: FieldSchema): boolean {
 	return field.type.startsWith('id.') && !field.rel;
 }
 
-function coerceFieldValue(type: FieldKind, raw: string): unknown {
+export function coerceFieldValue(type: FieldKind, raw: string): unknown {
 	if (raw === '') return undefined;
 
 	switch (type) {
