@@ -92,6 +92,15 @@ Paths may include params (`/todos/:id`). Methods are HTTP verbs such as `GET`, `
 
 A handler is a string or number, returned as `text/plain`, or an object with `action` and usually `model`.
 
+Optional `delay` is milliseconds on **any HTTP method’s object handler** (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, and so on). After that method’s action runs, Nipuu waits that long before returning. Inspector duration includes the wait. Shorthand string or number handlers stay instant. For a delayed static body, wrap it:
+
+```js
+GET: { action: 'static', response: 'Hello!', delay: 250 }
+POST: { action: 'upsert', model: 'todos', delay: 250 }
+```
+
+Omitted, `0`, negative, `NaN`, or a non-number `delay` means no wait. Unmatched routes are still immediate 404.
+
 ```js
 export const ROUTE = {
   '/': {

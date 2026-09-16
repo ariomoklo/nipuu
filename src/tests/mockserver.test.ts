@@ -103,6 +103,20 @@ describe('Mock server', () => {
 		});
 	});
 
+	describe('Scenario: delayed response', () => {
+		it.each(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const)(
+			'%s /slow waits at least 1500ms',
+			async (method) => {
+				const started = Date.now();
+				const res = await request(method, '/slow');
+				const elapsed = Date.now() - started;
+				expect(res.status).toBe(200);
+				expect(res.body).toBe('slow');
+				expect(elapsed).toBeGreaterThanOrEqual(1500);
+			},
+		);
+	});
+
 	describe('Journey: todo lifecycle', () => {
 		it('GET /users returns seeded owners', async () => {
 			const res = await request<User[]>('GET', '/users');

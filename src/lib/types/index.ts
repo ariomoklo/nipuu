@@ -47,6 +47,7 @@ export type RouteHandlerObject = {
 	};
 	update?: Record<string, RouteFieldRef | ((row: Record<string, unknown>) => unknown)>;
 	response?: unknown;
+	delay?: number;
 	[key: string]: unknown;
 };
 

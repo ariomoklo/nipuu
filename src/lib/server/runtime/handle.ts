@@ -1,5 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import { dispatch, notFound } from '$lib/server/handlers';
+import { waitDelay } from '$lib/server/handlers/delay/delay';
 import { appendLog } from '$lib/server/logs';
 import { matchRoute } from '$lib/server/router';
 import { getConfig } from '$lib/server/runtime';
@@ -53,6 +54,7 @@ export async function handleRequest(event: RequestEvent): Promise<Response> {
 		Object.assign(params, matched.params);
 		const handler = matched.handler as RouteHandler;
 		response = dispatch(handler, { params, queries, body: requestBody });
+		await waitDelay(handler);
 	}
 
 	const responseBody = await peekBody(response);

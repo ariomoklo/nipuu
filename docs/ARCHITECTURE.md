@@ -75,6 +75,7 @@ Mock-server scenario tests (`npm run test:mock`, project `mock`) live in `src/te
 - `search` / `find` / `upsert` / `update` / `delete` run against the in-memory table. `find` / `update` / `delete` miss is **404**. Unknown `action` or `model` is **400**.
 - `upsert` (full) and `update` (partial) call `validate()`. Failure is **400** and does not write rows.
 - Optional CRUD `response({ data, model })` maps the action result. `model` is the projected store.
+- Optional `delay` (milliseconds) on any HTTP method’s object handler waits after that method’s action and before the log. Shorthand string or number handlers cannot delay. Omitted, `0`, negative, or non-finite `delay` is no wait. Unmatched 404 is not delayed. Inspector `duration` includes the wait.
 - Every data-plane request is logged. Control-plane requests are not logged as mock API calls.
 
 ## CLI and npx

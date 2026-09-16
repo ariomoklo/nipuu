@@ -46,6 +46,7 @@ There is no in-process reseed. Read scenarios run first so they still see the se
 Seed **2**. Models: `users` and `todos` (`todos.owner` relates to `users`). Routes:
 
 - `GET /` — static `"Hello!"`
+- `GET` / `POST` / `PUT` / `PATCH` / `DELETE /slow` — static `"slow"` with `delay: 1500`
 - `GET /users` — search users
 - `GET /todos` — search todos (`q` include on title, `completed` equal)
 - `POST /todos` — upsert
@@ -66,6 +67,10 @@ Seed **2**. Models: `users` and `todos` (`todos.owner` relates to `users`). Rout
 - Happy: `GET /todos?q=Todo%201` filters by title include
 - Negative: `GET /todos/99` is `404`
 - Negative: `GET /unknown` is `404`
+
+### Scenario: delayed response
+
+- Happy: `GET` / `POST` / `PUT` / `PATCH` / `DELETE /slow` is `200` `slow` and takes at least 1500ms
 
 ### Journey: todo lifecycle
 
