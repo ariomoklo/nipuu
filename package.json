@@ -1,11 +1,11 @@
 {
 	"name": "nipuu",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"license": "UNLICENSED",
 	"description": "Mock API CLI with an in-memory MODEL/ROUTE runtime and a SvelteKit inspector",
 	"type": "module",
 	"bin": {
-		"nipuu": "./src/cli.js"
+		"nipuu": "src/cli.js"
 	},
 	"publishConfig": {
 		"access": "public"

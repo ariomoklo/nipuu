@@ -85,6 +85,9 @@ process.env.NIPUU_SEED = String(seed);
 
 const packageRoot = path.join(fileURLToPath(import.meta.url), '..', '..');
 
+// SvelteKit overrides Vite's `root` with the current directory, so run from the package root.
+process.chdir(packageRoot);
+
 const server = await createServer({
 	root: packageRoot,
 	configFile: path.join(packageRoot, 'vite.config.ts'),
