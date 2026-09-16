@@ -8,7 +8,7 @@
 		field,
 		value = '',
 		blank = null,
-		options = []
+		options = [],
 	}: {
 		field: TableFieldMeta;
 		value?: string;

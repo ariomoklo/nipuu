@@ -1,0 +1,36 @@
+{
+	"$schema": "./node_modules/oxlint/configuration_schema.json",
+	"plugins": ["eslint", "typescript", "unicorn", "oxc", "import", "vitest"],
+	"categories": {
+		"correctness": "error",
+		"suspicious": "error"
+	},
+	"ignorePatterns": [
+		"node_modules",
+		".svelte-kit",
+		"build",
+		"coverage",
+		"example/.svelte-kit"
+	],
+	"rules": {
+		"import/no-unassigned-import": "off",
+		"import/no-named-as-default-member": "off",
+		"unicorn/no-empty-file": "off",
+		"unicorn/require-module-specifiers": "off",
+		"unicorn/consistent-function-scoping": "off"
+	},
+	"env": {
+		"builtin": true,
+		"es2024": true,
+		"node": true,
+		"svelte": true
+	},
+	"overrides": [
+		{
+			"files": ["**/*.test.ts", "**/*.test.js"],
+			"env": {
+				"vitest": true
+			}
+		}
+	]
+}

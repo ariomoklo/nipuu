@@ -11,14 +11,14 @@ const model: ModelDefinition = {
 			.string()
 			.required()
 			.factory(({ index }) => `Todo ${index}`),
-		completed: t.boolean().default(false)
-	})
+		completed: t.boolean().default(false),
+	}),
 };
 
 const deleteHandler: RouteHandler = {
 	action: 'delete',
 	model: 'todos',
-	where: { id: { source: 'params', key: 'id' } }
+	where: { id: { source: 'params', key: 'id' } },
 };
 
 beforeEach(() => {
@@ -37,7 +37,7 @@ describe('deleteAction', () => {
 
 		const missing = dispatch(
 			{ action: 'find', model: 'todos', where: { id: { source: 'params', key: 'id' } } },
-			{ params: { id: '1' }, queries: {}, body: null }
+			{ params: { id: '1' }, queries: {}, body: null },
 		);
 		expect(missing.status).toBe(404);
 	});

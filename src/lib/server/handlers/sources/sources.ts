@@ -19,7 +19,7 @@ function isFieldRef(value: unknown): value is RouteFieldRef {
 function readSource(
 	source: RouteFieldRef['source'],
 	key: string,
-	context: DispatchContext
+	context: DispatchContext,
 ): unknown {
 	if (source === 'params') {
 		return Object.hasOwn(context.params, key) ? context.params[key] : undefined;
@@ -54,7 +54,7 @@ export function resolveFieldValue(
 	table: Table,
 	fieldName: string,
 	ref: unknown,
-	context: DispatchContext
+	context: DispatchContext,
 ): unknown {
 	return coerceValue(table, fieldName, resolveValue(ref, context));
 }
@@ -63,7 +63,7 @@ export function toRouteFilters(
 	table: Table,
 	map: unknown,
 	context: DispatchContext,
-	mode: 'where' | 'filter'
+	mode: 'where' | 'filter',
 ): FilterSchema[] | null {
 	if (map == null || typeof map !== 'object' || Array.isArray(map)) return [];
 
@@ -79,7 +79,7 @@ export function toRouteFilters(
 		filters.push({
 			key: fieldName,
 			value,
-			by: ref.by === 'include' ? 'include' : 'eq'
+			by: ref.by === 'include' ? 'include' : 'eq',
 		});
 	}
 

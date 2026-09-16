@@ -14,7 +14,7 @@ const exampleModel: ModelDefinition = {
 			.required()
 			.factory(({ index }) => `Todo ${index}`),
 		owner: t.id.uuid().required().rel('users', { field: 'id' }),
-		completed: t.boolean().default(false)
+		completed: t.boolean().default(false),
 	}),
 	users: (t) => ({
 		id: t.id.uuid(),
@@ -25,8 +25,8 @@ const exampleModel: ModelDefinition = {
 		email: t
 			.string()
 			.required()
-			.factory(({ index }) => `user.${index}@example.com`)
-	})
+			.factory(({ index }) => `user.${index}@example.com`),
+	}),
 };
 
 afterEach(() => {
@@ -80,11 +80,11 @@ describe('createTables', () => {
 	it('throws when a relation target table does not exist', () => {
 		const tables = generateSchemas({
 			todos: (t) => ({
-				owner: t.id.uuid().rel('users', { field: 'id' })
-			})
+				owner: t.id.uuid().rel('users', { field: 'id' }),
+			}),
 		});
 		expect(() => createTables(tables, 1)).toThrow(
-			'Cannot seed owner: table with "users" name, does not exist'
+			'Cannot seed owner: table with "users" name, does not exist',
 		);
 	});
 });
@@ -95,11 +95,11 @@ describe('listTables', () => {
 			generateSchemas({
 				todos: (t) => ({
 					id: t.id.index(),
-					owner: t.id.uuid().rel('users', { field: 'id' })
+					owner: t.id.uuid().rel('users', { field: 'id' }),
 				}),
-				users: (t) => ({ id: t.id.uuid() })
+				users: (t) => ({ id: t.id.uuid() }),
 			}),
-			1
+			1,
 		);
 		expect(listTables()).toEqual(['users', 'todos']);
 	});

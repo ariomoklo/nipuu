@@ -9,7 +9,7 @@ export const tables = stylex.create({
 		padding: 0,
 		display: 'flex',
 		flexDirection: 'column',
-		gap: space.sm
+		gap: space.sm,
 	},
 	modelCard: {
 		display: 'flex',
@@ -27,14 +27,14 @@ export const tables = stylex.create({
 		color: colors.foreground,
 		textDecorationLine: 'none',
 		':hover': {
-			borderColor: colors.primary
+			borderColor: colors.primary,
 		},
 		':focus-visible': {
 			outlineWidth: 2,
 			outlineStyle: 'solid',
 			outlineColor: colors.ring,
-			outlineOffset: 2
-		}
+			outlineOffset: 2,
+		},
 	},
 	name: {
 		margin: 0,
@@ -42,12 +42,12 @@ export const tables = stylex.create({
 		fontSize: typography.sizeTitle,
 		fontWeight: typography.weightDisplay,
 		letterSpacing: '-0.03em',
-		color: 'inherit'
+		color: 'inherit',
 	},
 	meta: {
 		fontFamily: typography.fontMono,
 		fontSize: typography.sizeMono,
 		lineHeight: typography.lineBody,
-		color: colors.mutedForeground
-	}
+		color: colors.mutedForeground,
+	},
 });

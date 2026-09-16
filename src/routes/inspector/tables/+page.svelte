@@ -25,7 +25,7 @@
 				`${table.propertyCount} ${table.propertyCount === 1 ? 'property' : 'properties'}`,
 				table.relatedModels.length > 0
 					? `Related: ${table.relatedModels.join(', ')}`
-					: 'No relationships'
+					: 'No relationships',
 			].join(' ・ ')}
 			<li>
 				<a href="{INSPECTOR_URL}/tables/{table.name}" {...stylex.attrs(tables.modelCard)}>

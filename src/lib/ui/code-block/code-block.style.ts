@@ -9,7 +9,7 @@ export const code = stylex.create({
 		borderWidth: 1,
 		borderStyle: 'solid',
 		borderColor: colors.border,
-		borderRadius: radius.control
+		borderRadius: radius.control,
 	},
 	header: {
 		display: 'flex',
@@ -21,21 +21,21 @@ export const code = stylex.create({
 		backgroundColor: colors.background,
 		borderBottomWidth: 1,
 		borderBottomStyle: 'solid',
-		borderBottomColor: colors.border
+		borderBottomColor: colors.border,
 	},
 	title: {
 		margin: 0,
 		fontFamily: typography.fontBody,
 		fontSize: typography.sizeLabel,
 		fontWeight: typography.weightStrong,
-		color: colors.mutedForeground
+		color: colors.mutedForeground,
 	},
 	body: {
 		display: 'grid',
 		gridTemplateColumns: 'auto minmax(0, 1fr)',
 		alignItems: 'start',
 		overflowX: 'auto',
-		paddingBlock: space.sm
+		paddingBlock: space.sm,
 	},
 	gutter: {
 		paddingInline: space.md,
@@ -46,7 +46,7 @@ export const code = stylex.create({
 		textAlign: 'right',
 		userSelect: 'none',
 		whiteSpace: 'pre',
-		fontVariantNumeric: 'tabular-nums'
+		fontVariantNumeric: 'tabular-nums',
 	},
 	line: {
 		margin: 0,
@@ -55,12 +55,12 @@ export const code = stylex.create({
 		fontFamily: typography.fontMono,
 		fontSize: typography.sizeMono,
 		lineHeight: typography.lineBody,
-		whiteSpace: 'pre'
+		whiteSpace: 'pre',
 	},
 	token: {
 		color: 'var(--shiki-light)',
 		'@media (prefers-color-scheme: dark)': {
-			color: 'var(--shiki-dark)'
-		}
-	}
+			color: 'var(--shiki-dark)',
+		},
+	},
 });

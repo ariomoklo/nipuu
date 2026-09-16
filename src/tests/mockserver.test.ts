@@ -61,13 +61,13 @@ describe('Mock server', () => {
 				id: 1,
 				title: 'Todo 1',
 				owner: expect.any(String),
-				completed: false
+				completed: false,
 			});
 			expect(res.body[1]).toEqual({
 				id: 2,
 				title: 'Todo 2',
 				owner: expect.any(String),
-				completed: false
+				completed: false,
 			});
 		});
 
@@ -78,7 +78,7 @@ describe('Mock server', () => {
 				id: 1,
 				title: 'Todo 1',
 				owner: expect.any(String),
-				completed: false
+				completed: false,
 			});
 		});
 
@@ -86,7 +86,7 @@ describe('Mock server', () => {
 			const res = await request('GET', `/todos?q=${encodeURIComponent('Todo 1')}`);
 			expect(res.status).toBe(200);
 			expect(res.body).toEqual([
-				expect.objectContaining({ id: 1, title: 'Todo 1', completed: false })
+				expect.objectContaining({ id: 1, title: 'Todo 1', completed: false }),
 			]);
 		});
 
@@ -111,7 +111,7 @@ describe('Mock server', () => {
 			expect(res.body[0]).toEqual({
 				id: expect.any(String),
 				name: 'User 1',
-				email: 'user.1@example.com'
+				email: 'user.1@example.com',
 			});
 			ownerId = res.body[0].id;
 		});
@@ -123,7 +123,7 @@ describe('Mock server', () => {
 				id: 3,
 				title: 'New todo',
 				owner: ownerId,
-				completed: false
+				completed: false,
 			});
 			createdId = res.body.id;
 		});
@@ -142,7 +142,7 @@ describe('Mock server', () => {
 				id: createdId,
 				title: 'New todo',
 				owner: ownerId,
-				completed: false
+				completed: false,
 			});
 		});
 
@@ -153,7 +153,7 @@ describe('Mock server', () => {
 				id: createdId,
 				title: 'Renamed',
 				owner: ownerId,
-				completed: false
+				completed: false,
 			});
 		});
 
@@ -170,7 +170,7 @@ describe('Mock server', () => {
 				id: createdId,
 				title: 'Renamed',
 				owner: ownerId,
-				completed: true
+				completed: true,
 			});
 		});
 
@@ -181,7 +181,7 @@ describe('Mock server', () => {
 				id: createdId,
 				title: 'Renamed',
 				owner: ownerId,
-				completed: true
+				completed: true,
 			});
 		});
 

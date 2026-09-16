@@ -42,7 +42,7 @@ export function cloneFieldItem(item: FieldItem): FieldItem {
 	return {
 		schema: item.schema,
 		hasRelation: item.hasRelation,
-		value: cloneValue(item.value)
+		value: cloneValue(item.value),
 	};
 }
 

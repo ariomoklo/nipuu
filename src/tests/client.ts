@@ -42,7 +42,7 @@ function sleep(ms: number): Promise<void> {
 async function waitUntilReady(
 	port: number,
 	processChild: ChildProcess,
-	output: () => string
+	output: () => string,
 ): Promise<string> {
 	const origins = [`http://127.0.0.1:${port}`, `http://localhost:${port}`];
 	const deadline = Date.now() + 25_000;
@@ -50,7 +50,7 @@ async function waitUntilReady(
 	while (Date.now() < deadline) {
 		if (processChild.exitCode !== null || processChild.signalCode) {
 			throw new Error(
-				`Mock server exited before ready (code ${processChild.exitCode}, signal ${processChild.signalCode}):\n${output()}`
+				`Mock server exited before ready (code ${processChild.exitCode}, signal ${processChild.signalCode}):\n${output()}`,
 			);
 		}
 
@@ -79,8 +79,8 @@ export async function startMockServer(): Promise<{ child: ChildProcess; origin: 
 		{
 			cwd: packageRoot,
 			env: childEnv(),
-			stdio: ['ignore', 'pipe', 'pipe']
-		}
+			stdio: ['ignore', 'pipe', 'pipe'],
+		},
 	);
 
 	const onData = (chunk: Buffer) => {
@@ -127,7 +127,7 @@ export function createRequest(origin: string): MockRequest {
 	return async <T = unknown>(
 		method: string,
 		pathName: string,
-		body?: unknown
+		body?: unknown,
 	): Promise<MockResponse<T>> => {
 		const headers: Record<string, string> = {};
 		const init: RequestInit = { method, headers };
@@ -145,7 +145,7 @@ export function createRequest(origin: string): MockRequest {
 			status: res.status,
 			contentType,
 			headers: res.headers,
-			body: parsed as T
+			body: parsed as T,
 		};
 	};
 }
@@ -160,5 +160,5 @@ export type MockResponse<T = unknown> = {
 export type MockRequest = <T = unknown>(
 	method: string,
 	pathName: string,
-	body?: unknown
+	body?: unknown,
 ) => Promise<MockResponse<T>>;

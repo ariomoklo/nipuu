@@ -1,0 +1,14 @@
+{
+	"$schema": "./node_modules/oxfmt/configuration_schema.json",
+	"useTabs": true,
+	"singleQuote": true,
+	"svelte": true,
+	"ignorePatterns": [
+		"node_modules/**",
+		".svelte-kit/**",
+		"example/.svelte-kit/**",
+		"coverage/**",
+		"build/**",
+		"package-lock.json"
+	]
+}

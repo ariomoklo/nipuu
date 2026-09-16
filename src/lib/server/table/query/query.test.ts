@@ -7,7 +7,7 @@ import {
 	getTable,
 	query,
 	resetTables,
-	update
+	update,
 } from '$lib/server/table';
 import { parseTableQuery, payloadFromForm, toFieldMeta } from '$lib/server/table/query/parse';
 
@@ -16,8 +16,8 @@ const notesModel: ModelDefinition = {
 		id: t.id.index(),
 		title: t.string().factory(({ index }) => `Note ${index}`),
 		count: t.number().factory(({ index }) => index),
-		done: t.boolean().default(false)
-	})
+		done: t.boolean().default(false),
+	}),
 };
 
 afterEach(() => {
@@ -62,7 +62,7 @@ describe('query', () => {
 		const result = query(notes, {
 			filters: [{ key: 'count', by: 'gte', value: 3 }],
 			page: 1,
-			limit: 10
+			limit: 10,
 		});
 		expect(result.rows.map((row) => row.id)).toEqual([3, 4, 5]);
 	});
@@ -90,14 +90,14 @@ describe('query', () => {
 				todos: (t) => ({
 					id: t.id.index(),
 					title: t.string().factory(() => 'Todo'),
-					owner: t.id.uuid().rel('users', { field: 'id' })
+					owner: t.id.uuid().rel('users', { field: 'id' }),
 				}),
 				users: (t) => ({
 					id: t.id.uuid(),
-					name: t.string().factory(() => 'UniqueUserName')
-				})
+					name: t.string().factory(() => 'UniqueUserName'),
+				}),
 			}),
-			1
+			1,
 		);
 		const userName = getTable('users')!.rows[0].name.value as string;
 		expect(query(getTable('todos')!, { search: userName }).total).toBe(0);
@@ -111,14 +111,14 @@ describe('parseTableQuery', () => {
 		const schema = getTable('notes')!.schema;
 		const parsed = parseTableQuery(
 			schema,
-			new URLSearchParams('q=Note&page=2&limit=5&count=3&count.by=gte&title=Note&title.by=include')
+			new URLSearchParams('q=Note&page=2&limit=5&count=3&count.by=gte&title=Note&title.by=include'),
 		);
 		expect(parsed.search).toBe('Note');
 		expect(parsed.page).toBe(2);
 		expect(parsed.limit).toBe(5);
 		expect(parsed.filters).toEqual([
 			{ key: 'title', value: 'Note', by: 'include' },
-			{ key: 'count', value: 3, by: 'gte' }
+			{ key: 'count', value: 3, by: 'gte' },
 		]);
 	});
 
@@ -127,7 +127,7 @@ describe('parseTableQuery', () => {
 		const schema = getTable('notes')!.schema;
 		const parsed = parseTableQuery(
 			schema,
-			new URLSearchParams('title=Note&title.by=gte&count=1&count.by=include&done=true&done.by=eq')
+			new URLSearchParams('title=Note&title.by=gte&count=1&count.by=include&done=true&done.by=eq'),
 		);
 		expect(parsed.filters).toEqual([{ key: 'done', value: true, by: 'eq' }]);
 	});
@@ -142,7 +142,7 @@ describe('toFieldMeta', () => {
 			type: 'id.index',
 			autoId: true,
 			identity: true,
-			operators: ['eq', 'neq', 'gt', 'gte', 'lt', 'lte']
+			operators: ['eq', 'neq', 'gt', 'gte', 'lt', 'lte'],
 		});
 		expect(id).not.toHaveProperty('factory');
 	});
@@ -161,7 +161,7 @@ describe('payloadFromForm', () => {
 		expect(payloadFromForm(schema, createData, 'create')).toEqual({
 			title: 'Hello',
 			count: 4,
-			done: true
+			done: true,
 		});
 
 		const deleteData = new FormData();

@@ -11,7 +11,7 @@ const model: ModelDefinition = {
 			.required()
 			.factory(({ index }) => `Todo ${index}`),
 		owner: t.id.uuid().required().rel('users', { field: 'id' }),
-		completed: t.boolean().default(false)
+		completed: t.boolean().default(false),
 	}),
 	users: (t) => ({
 		id: t.id.uuid(),
@@ -22,8 +22,8 @@ const model: ModelDefinition = {
 		email: t
 			.string()
 			.required()
-			.factory(({ index }) => `user.${index}@example.com`)
-	})
+			.factory(({ index }) => `user.${index}@example.com`),
+	}),
 };
 
 beforeEach(() => {
@@ -39,14 +39,14 @@ describe('upsertAction', () => {
 		const owner = toStore().users[0]!.id.value;
 		const res = dispatch(
 			{ action: 'upsert', model: 'todos' },
-			{ params: {}, queries: {}, body: { title: 'New', owner } }
+			{ params: {}, queries: {}, body: { title: 'New', owner } },
 		);
 		expect(res.status).toBe(200);
 		expect(await res.json()).toEqual({
 			id: 3,
 			title: 'New',
 			owner,
-			completed: false
+			completed: false,
 		});
 	});
 
@@ -54,21 +54,21 @@ describe('upsertAction', () => {
 		const owner = toStore().users[0]!.id.value;
 		const res = dispatch(
 			{ action: 'upsert', model: 'todos' },
-			{ params: {}, queries: {}, body: { id: 1, title: 'Replaced', owner, completed: true } }
+			{ params: {}, queries: {}, body: { id: 1, title: 'Replaced', owner, completed: true } },
 		);
 		expect(res.status).toBe(200);
 		expect(await res.json()).toEqual({
 			id: 1,
 			title: 'Replaced',
 			owner,
-			completed: true
+			completed: true,
 		});
 	});
 
 	it('returns 400 when validation fails', async () => {
 		const res = dispatch(
 			{ action: 'upsert', model: 'todos' },
-			{ params: {}, queries: {}, body: { title: 'No owner' } }
+			{ params: {}, queries: {}, body: { title: 'No owner' } },
 		);
 		expect(res.status).toBe(400);
 		const body = await res.json();

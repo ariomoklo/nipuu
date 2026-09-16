@@ -11,19 +11,19 @@ export const chrome = stylex.create({
 		color: colors.foreground,
 		'@media (max-width: 40rem)': {
 			paddingInline: space.md,
-			paddingBlock: space.lg
-		}
+			paddingBlock: space.lg,
+		},
 	},
 	header: {
 		display: 'flex',
 		alignItems: 'baseline',
 		justifyContent: 'flex-start',
 		gap: space.md,
-		marginBottom: space.xxl
+		marginBottom: space.xxl,
 	},
 	nav: {
 		display: 'flex',
-		gap: space.lg
+		gap: space.lg,
 	},
 	title: {
 		margin: 0,
@@ -32,32 +32,32 @@ export const chrome = stylex.create({
 		fontWeight: typography.weightDisplay,
 		lineHeight: typography.lineTight,
 		letterSpacing: '-0.03em',
-		color: colors.foreground
+		color: colors.foreground,
 	},
 	titleMark: {
 		display: 'block',
 		width: '4ch',
 		height: 3,
 		marginTop: space.sm,
-		backgroundColor: colors.primary
+		backgroundColor: colors.primary,
 	},
 	back: {
 		display: 'inline-block',
-		marginBottom: space.lg
+		marginBottom: space.lg,
 	},
 	section: {
-		marginTop: space.xl
+		marginTop: space.xl,
 	},
 	empty: {
 		marginTop: space.xl,
 		maxWidth: '36rem',
 		fontSize: typography.sizeBody,
-		color: colors.mutedForeground
+		color: colors.mutedForeground,
 	},
 	detailMeta: {
 		marginTop: space.sm,
 		fontFamily: typography.fontMono,
 		fontSize: typography.sizeMono,
-		color: colors.mutedForeground
-	}
+		color: colors.mutedForeground,
+	},
 });

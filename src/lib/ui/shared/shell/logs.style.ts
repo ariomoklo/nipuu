@@ -9,7 +9,7 @@ export const logs = stylex.create({
 		padding: 0,
 		display: 'flex',
 		flexDirection: 'column',
-		gap: space.sm
+		gap: space.sm,
 	},
 	row: {
 		display: 'grid',
@@ -30,14 +30,14 @@ export const logs = stylex.create({
 		color: colors.foreground,
 		':hover': {
 			color: colors.primary,
-			borderColor: colors.primary
+			borderColor: colors.primary,
 		},
 		':focus-visible': {
 			outlineWidth: 2,
 			outlineStyle: 'solid',
 			outlineColor: colors.ring,
-			outlineOffset: 2
-		}
+			outlineOffset: 2,
+		},
 	},
 	method: {
 		fontFamily: typography.fontDisplay,
@@ -45,7 +45,7 @@ export const logs = stylex.create({
 		fontWeight: typography.weightDisplay,
 		lineHeight: typography.lineTight,
 		letterSpacing: '-0.03em',
-		color: 'inherit'
+		color: 'inherit',
 	},
 	path: {
 		fontFamily: typography.fontMono,
@@ -53,24 +53,24 @@ export const logs = stylex.create({
 		color: colors.foreground,
 		overflow: 'hidden',
 		textOverflow: 'ellipsis',
-		whiteSpace: 'nowrap'
+		whiteSpace: 'nowrap',
 	},
 	status: {
 		fontFamily: typography.fontMono,
-		fontSize: typography.sizeMono
+		fontSize: typography.sizeMono,
 	},
 	statusOk: {
-		color: colors.primary
+		color: colors.primary,
 	},
 	statusNeutral: {
-		color: colors.mutedForeground
+		color: colors.mutedForeground,
 	},
 	statusError: {
-		color: colors.destructive
+		color: colors.destructive,
 	},
 	meta: {
 		fontFamily: typography.fontMono,
 		fontSize: typography.sizeMono,
-		color: colors.mutedForeground
-	}
+		color: colors.mutedForeground,
+	},
 });

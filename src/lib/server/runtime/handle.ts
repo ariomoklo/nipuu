@@ -69,7 +69,7 @@ export async function handleRequest(event: RequestEvent): Promise<Response> {
 		status: response.status,
 		responseHeaders: Object.fromEntries(response.headers.entries()),
 		responseBody,
-		duration: Date.now() - startedAt
+		duration: Date.now() - startedAt,
 	} satisfies LogEntry);
 
 	return response;

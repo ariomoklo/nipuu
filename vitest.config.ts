@@ -7,13 +7,26 @@ export default mergeConfig(
 	defineConfig({
 		test: {
 			environment: 'node',
+			coverage: {
+				provider: 'v8',
+				reporter: ['text', 'lcov'],
+				reportsDirectory: 'coverage',
+				include: ['src/lib/server/**'],
+				exclude: [...configDefaults.exclude, 'src/tests/**', 'src/lib/**/*.test.ts'],
+				thresholds: {
+					statements: 76,
+					branches: 75,
+					functions: 81,
+					lines: 80,
+				},
+			},
 			projects: [
 				{
 					test: {
 						name: 'unit',
 						include: ['src/**/*.test.ts'],
-						exclude: [...configDefaults.exclude, 'src/tests/**']
-					}
+						exclude: [...configDefaults.exclude, 'src/tests/**'],
+					},
 				},
 				{
 					test: {
@@ -21,10 +34,10 @@ export default mergeConfig(
 						include: ['src/tests/**/*.test.ts'],
 						fileParallelism: false,
 						hookTimeout: 30_000,
-						testTimeout: 30_000
-					}
-				}
-			]
-		}
-	})
+						testTimeout: 30_000,
+					},
+				},
+			],
+		},
+	}),
 );

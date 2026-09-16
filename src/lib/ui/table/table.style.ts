@@ -6,7 +6,7 @@ export const table = stylex.create({
 		width: '100%',
 		textAlign: 'left',
 		fontFamily: typography.fontMono,
-		fontSize: typography.sizeMono
+		fontSize: typography.sizeMono,
 	},
 	th: {
 		paddingBlock: space.sm,
@@ -21,7 +21,7 @@ export const table = stylex.create({
 		borderBottomWidth: 1,
 		borderBottomStyle: 'solid',
 		borderBottomColor: colors.border,
-		whiteSpace: 'nowrap'
+		whiteSpace: 'nowrap',
 	},
 	td: {
 		paddingBlock: space.sm,
@@ -31,6 +31,6 @@ export const table = stylex.create({
 		verticalAlign: 'top',
 		borderBottomWidth: 1,
 		borderBottomStyle: 'solid',
-		borderBottomColor: colors.border
-	}
+		borderBottomColor: colors.border,
+	},
 });

@@ -7,13 +7,13 @@ export const textLink = stylex.create({
 		fontSize: typography.sizeBody,
 		color: colors.primary,
 		':hover': {
-			textDecorationLine: 'underline'
+			textDecorationLine: 'underline',
 		},
 		':focus-visible': {
 			outlineWidth: 2,
 			outlineStyle: 'solid',
 			outlineColor: colors.ring,
-			outlineOffset: 2
-		}
-	}
+			outlineOffset: 2,
+		},
+	},
 });

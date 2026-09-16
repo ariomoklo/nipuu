@@ -50,7 +50,7 @@
 							logStyles.status,
 							tone === 'ok' && logStyles.statusOk,
 							tone === 'neutral' && logStyles.statusNeutral,
-							tone === 'error' && logStyles.statusError
+							tone === 'error' && logStyles.statusError,
 						)}>{entry.status}</span
 					>
 					<span title="Time to respond" {...stylex.attrs(logStyles.meta)}>{entry.duration}ms</span>

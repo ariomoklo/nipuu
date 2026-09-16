@@ -10,7 +10,7 @@ const exampleModel: ModelDefinition = {
 			.required()
 			.factory(({ index }) => `Todo ${index}`),
 		owner: t.id.uuid().required().rel('users', { field: 'id' }),
-		completed: t.boolean().default(false)
+		completed: t.boolean().default(false),
 	}),
 	users: (t) => ({
 		id: t.id.uuid(),
@@ -21,8 +21,8 @@ const exampleModel: ModelDefinition = {
 		email: t
 			.string()
 			.required()
-			.factory(({ index }) => `user.${index}@example.com`)
-	})
+			.factory(({ index }) => `user.${index}@example.com`),
+	}),
 };
 
 describe('sortTablesByFk', () => {
@@ -35,8 +35,8 @@ describe('sortTablesByFk', () => {
 		const sorted = sortTablesByFk(
 			generateSchemas({
 				alpha: (t) => ({ id: t.id.index() }),
-				beta: (t) => ({ id: t.id.index() })
-			})
+				beta: (t) => ({ id: t.id.index() }),
+			}),
 		);
 		expect(sorted.map((table) => table.name)).toEqual(['alpha', 'beta']);
 	});
@@ -44,7 +44,7 @@ describe('sortTablesByFk', () => {
 	it('throws on circular relations', () => {
 		const tables = generateSchemas({
 			a: (t) => ({ id: t.id.index(), bId: t.id.index().rel('b', { field: 'id' }) }),
-			b: (t) => ({ id: t.id.index(), aId: t.id.index().rel('a', { field: 'id' }) })
+			b: (t) => ({ id: t.id.index(), aId: t.id.index().rel('a', { field: 'id' }) }),
 		});
 		expect(() => sortTablesByFk(tables)).toThrow('Circular relation involving table "a"');
 	});
@@ -53,8 +53,8 @@ describe('sortTablesByFk', () => {
 		const tables = generateSchemas({
 			users: (t) => ({
 				id: t.id.uuid(),
-				manager: t.id.uuid().rel('users', { field: 'id' })
-			})
+				manager: t.id.uuid().rel('users', { field: 'id' }),
+			}),
 		});
 		expect(() => sortTablesByFk(tables)).toThrow('Circular relation involving table "users"');
 	});

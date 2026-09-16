@@ -47,15 +47,21 @@
 			detail.hint,
 			tone === 'ok' && logStyles.statusOk,
 			tone === 'neutral' && logStyles.statusNeutral,
-			tone === 'error' && logStyles.statusError
+			tone === 'error' && logStyles.statusError,
 		)}>{log.status}</span
 	>
 	·
-	<span title="Time to respond" aria-label="Time to respond {log.duration} milliseconds" {...stylex.attrs(detail.hint)}
-		>{log.duration}ms</span
+	<span
+		title="Time to respond"
+		aria-label="Time to respond {log.duration} milliseconds"
+		{...stylex.attrs(detail.hint)}>{log.duration}ms</span
 	>
 	·
-	<span title="Requested at {log.at}" aria-label="Requested at {log.at}" {...stylex.attrs(detail.hint)}>{when}</span>
+	<span
+		title="Requested at {log.at}"
+		aria-label="Requested at {log.at}"
+		{...stylex.attrs(detail.hint)}>{when}</span
+	>
 </p>
 
 <div {...stylex.attrs(chrome.section)}>

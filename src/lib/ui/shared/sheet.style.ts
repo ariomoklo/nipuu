@@ -20,13 +20,13 @@ export const sheet = stylex.create({
 		borderInlineStartStyle: 'solid',
 		borderInlineStartColor: colors.border,
 		'::backdrop': {
-			backgroundColor: colors.overlay
-		}
+			backgroundColor: colors.overlay,
+		},
 	},
 	form: {
 		display: 'flex',
 		flexDirection: 'column',
-		height: '100%'
+		height: '100%',
 	},
 	header: {
 		display: 'flex',
@@ -37,7 +37,7 @@ export const sheet = stylex.create({
 		paddingBlock: space.md,
 		borderBottomWidth: 1,
 		borderBottomStyle: 'solid',
-		borderBottomColor: colors.border
+		borderBottomColor: colors.border,
 	},
 	title: {
 		margin: 0,
@@ -46,13 +46,13 @@ export const sheet = stylex.create({
 		fontWeight: typography.weightStrong,
 		textTransform: 'uppercase',
 		letterSpacing: '0.08em',
-		color: colors.mutedForeground
+		color: colors.mutedForeground,
 	},
 	body: {
 		flex: 1,
 		overflowY: 'auto',
 		paddingInline: space.lg,
-		paddingBlock: space.lg
+		paddingBlock: space.lg,
 	},
 	footer: {
 		display: 'flex',
@@ -63,6 +63,6 @@ export const sheet = stylex.create({
 		paddingBlock: space.md,
 		borderTopWidth: 1,
 		borderTopStyle: 'solid',
-		borderTopColor: colors.border
-	}
+		borderTopColor: colors.border,
+	},
 });

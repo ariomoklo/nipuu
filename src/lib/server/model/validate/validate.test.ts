@@ -10,7 +10,7 @@ const exampleModel: ModelDefinition = {
 			.required()
 			.factory(({ index }) => `Todo ${index}`),
 		owner: t.id.uuid().required().rel('users', { field: 'id' }),
-		completed: t.boolean().default(false)
+		completed: t.boolean().default(false),
 	}),
 	users: (t) => ({
 		id: t.id.uuid(),
@@ -21,8 +21,8 @@ const exampleModel: ModelDefinition = {
 		email: t
 			.string()
 			.required()
-			.factory(({ index }) => `user.${index}@example.com`)
-	})
+			.factory(({ index }) => `user.${index}@example.com`),
+	}),
 };
 
 describe('validate', () => {
@@ -41,7 +41,7 @@ describe('validate', () => {
 	it('rejects an unknown table', () => {
 		expect(validate(tables, toStore(), 'missing', {})).toEqual({
 			ok: false,
-			errors: ['Unknown table: missing']
+			errors: ['Unknown table: missing'],
 		});
 	});
 
@@ -58,11 +58,11 @@ describe('validate', () => {
 			title: 'Buy milk',
 			owner,
 			completed: true,
-			extra: 'drop me'
+			extra: 'drop me',
 		});
 		expect(result).toEqual({
 			ok: true,
-			data: { id: 10, title: 'Buy milk', owner, completed: true }
+			data: { id: 10, title: 'Buy milk', owner, completed: true },
 		});
 	});
 
@@ -70,32 +70,36 @@ describe('validate', () => {
 		const result = validate(tables, toStore(), 'todos', {
 			id: 11,
 			title: 'Default completed',
-			owner
+			owner,
 		});
 		expect(result).toEqual({
 			ok: true,
-			data: { id: 11, title: 'Default completed', owner, completed: false }
+			data: { id: 11, title: 'Default completed', owner, completed: false },
 		});
 	});
 
 	it('reports missing required fields on a full write', () => {
 		expect(validate(tables, toStore(), 'todos', { id: 1 })).toEqual({
 			ok: false,
-			errors: ['title is required', 'owner is required']
+			errors: ['title is required', 'owner is required'],
 		});
 	});
 
 	it('skips missing fields on a partial write, including required ones', () => {
-		expect(validate(tables, toStore(), 'todos', { title: 'Only title' }, { partial: true })).toEqual({
+		expect(
+			validate(tables, toStore(), 'todos', { title: 'Only title' }, { partial: true }),
+		).toEqual({
 			ok: true,
-			data: { title: 'Only title' }
+			data: { title: 'Only title' },
 		});
 	});
 
 	it('does not apply defaults on a partial write', () => {
-		expect(validate(tables, toStore(), 'todos', { title: 'No default' }, { partial: true })).toEqual({
+		expect(
+			validate(tables, toStore(), 'todos', { title: 'No default' }, { partial: true }),
+		).toEqual({
 			ok: true,
-			data: { title: 'No default' }
+			data: { title: 'No default' },
 		});
 	});
 
@@ -105,11 +109,11 @@ describe('validate', () => {
 				id: 1.5,
 				title: 1,
 				owner,
-				completed: 'yes'
-			})
+				completed: 'yes',
+			}),
 		).toEqual({
 			ok: false,
-			errors: ['id must be an integer', 'title must be a string', 'completed must be a boolean']
+			errors: ['id must be an integer', 'title must be a string', 'completed must be a boolean'],
 		});
 	});
 
@@ -119,11 +123,11 @@ describe('validate', () => {
 				id: 1,
 				title: 'Bad uuid',
 				owner: '00000000-0000-0000-0000-000000000000',
-				completed: false
-			})
+				completed: false,
+			}),
 		).toEqual({
 			ok: false,
-			errors: ['owner must be a valid UUID']
+			errors: ['owner must be a valid UUID'],
 		});
 	});
 
@@ -133,11 +137,11 @@ describe('validate', () => {
 				id: 1,
 				title: 'Orphan',
 				owner: '00000000-0000-4000-8000-000000000000',
-				completed: false
-			})
+				completed: false,
+			}),
 		).toEqual({
 			ok: false,
-			errors: ['owner does not reference an existing users.id']
+			errors: ['owner does not reference an existing users.id'],
 		});
 	});
 
@@ -147,11 +151,11 @@ describe('validate', () => {
 				id: 1,
 				title: 'No owner',
 				owner: null,
-				completed: false
-			})
+				completed: false,
+			}),
 		).toEqual({
 			ok: false,
-			errors: ['owner must be a valid UUID']
+			errors: ['owner must be a valid UUID'],
 		});
 	});
 });

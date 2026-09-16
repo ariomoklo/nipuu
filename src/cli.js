@@ -93,8 +93,8 @@ const server = await createServer({
 	configFile: path.join(packageRoot, 'vite.config.ts'),
 	server: {
 		port,
-		strictPort: true
-	}
+		strictPort: true,
+	},
 });
 
 await server.listen();

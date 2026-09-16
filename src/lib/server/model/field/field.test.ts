@@ -11,7 +11,7 @@ describe('field', () => {
 			hasDefault: false,
 			defaultValue: undefined,
 			factory: undefined,
-			rel: undefined
+			rel: undefined,
 		});
 	});
 

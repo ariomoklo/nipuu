@@ -8,8 +8,8 @@ const exampleModel: ModelDefinition = {
 	notes: (t) => ({
 		id: t.id.index(),
 		title: t.string(),
-		done: t.boolean()
-	})
+		done: t.boolean(),
+	}),
 };
 
 afterEach(() => {
@@ -35,10 +35,10 @@ describe('find and select', () => {
 					label: t
 						.string()
 						.default('fallback')
-						.factory(({ index }) => `item-${index}`)
-				})
+						.factory(({ index }) => `item-${index}`),
+				}),
 			}),
-			1
+			1,
 		);
 		expect(select(getTable('items')!)[0]?.label).toBe('item-1');
 	});
@@ -48,15 +48,15 @@ describe('find and select', () => {
 			generateSchemas({
 				todos: (t) => ({
 					id: t.id.index(),
-					owner: t.id.uuid().rel('users', { field: 'id', omit: ['email'] })
+					owner: t.id.uuid().rel('users', { field: 'id', omit: ['email'] }),
 				}),
 				users: (t) => ({
 					id: t.id.uuid(),
 					name: t.string().factory(({ index }) => `User ${index}`),
-					email: t.string().factory(({ index }) => `user.${index}@example.com`)
-				})
+					email: t.string().factory(({ index }) => `user.${index}@example.com`),
+				}),
 			}),
-			1
+			1,
 		);
 
 		const todos = getTable('todos')!;
@@ -68,7 +68,7 @@ describe('find and select', () => {
 		const found = find(todos, { id: 1 });
 		expect(found).toEqual({
 			id: 1,
-			owner: { id: users.rows[stored.index].id.value, name: 'User 1' }
+			owner: { id: users.rows[stored.index].id.value, name: 'User 1' },
 		});
 		expect(found).not.toHaveProperty('index');
 		expect(found?.owner).not.toHaveProperty('row');

@@ -9,7 +9,7 @@ export const paramTabs = stylex.create({
 		borderWidth: 1,
 		borderStyle: 'solid',
 		borderColor: colors.border,
-		borderRadius: radius.control
+		borderRadius: radius.control,
 	},
 	tablist: {
 		display: 'flex',
@@ -19,7 +19,7 @@ export const paramTabs = stylex.create({
 		backgroundColor: colors.background,
 		borderBottomWidth: 1,
 		borderBottomStyle: 'solid',
-		borderBottomColor: colors.border
+		borderBottomColor: colors.border,
 	},
 	tab: {
 		appearance: 'none',
@@ -39,22 +39,22 @@ export const paramTabs = stylex.create({
 		color: colors.mutedForeground,
 		cursor: 'pointer',
 		':hover': {
-			color: colors.foreground
+			color: colors.foreground,
 		},
 		':focus-visible': {
 			outlineWidth: 2,
 			outlineStyle: 'solid',
 			outlineColor: colors.ring,
-			outlineOffset: 2
-		}
+			outlineOffset: 2,
+		},
 	},
 	tabCurrent: {
 		color: colors.primary,
 		fontWeight: typography.weightStrong,
-		borderBottomColor: colors.primary
+		borderBottomColor: colors.primary,
 	},
 	panel: {
-		padding: space.xs
+		padding: space.xs,
 	},
 	empty: {
 		margin: 0,
@@ -62,10 +62,10 @@ export const paramTabs = stylex.create({
 		paddingBlock: space.sm,
 		fontFamily: typography.fontBody,
 		fontSize: typography.sizeLabel,
-		color: colors.mutedForeground
+		color: colors.mutedForeground,
 	},
 	table: {
-		borderCollapse: 'collapse'
+		borderCollapse: 'collapse',
 	},
 	th: {
 		paddingBlock: space.xs,
@@ -78,10 +78,10 @@ export const paramTabs = stylex.create({
 		borderWidth: 1,
 		borderStyle: 'solid',
 		borderColor: colors.border,
-		whiteSpace: 'nowrap'
+		whiteSpace: 'nowrap',
 	},
 	keyCol: {
-		width: '12rem'
+		width: '12rem',
 	},
 	td: {
 		paddingBlock: space.xs,
@@ -91,9 +91,9 @@ export const paramTabs = stylex.create({
 		backgroundColor: colors.background,
 		borderWidth: 1,
 		borderStyle: 'solid',
-		borderColor: colors.border
+		borderColor: colors.border,
 	},
 	key: {
-		color: colors.primary
-	}
+		color: colors.primary,
+	},
 });

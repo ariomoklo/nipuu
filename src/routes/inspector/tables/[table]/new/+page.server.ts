@@ -11,7 +11,7 @@ import {
 	resolveRelationLabels,
 	toFieldMeta,
 	toStore,
-	type Table
+	type Table,
 } from '$lib/server/table';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -27,7 +27,7 @@ export const load: PageServerLoad = async ({ params }) => {
 	return {
 		name: table.schema.name,
 		fields: Object.values(table.schema.fields).map(toFieldMeta),
-		relations: relationOptions(table, getTables())
+		relations: relationOptions(table, getTables()),
 	};
 };
 
@@ -42,5 +42,5 @@ export const actions: Actions = {
 		if (!result.ok) return fail(400, { errors: result.errors });
 		insert(table, result.data);
 		redirect(303, `${INSPECTOR_URL}/tables/${table.schema.name}`);
-	}
+	},
 };

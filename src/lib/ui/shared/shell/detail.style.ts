@@ -6,13 +6,13 @@ export const detail = stylex.create({
 		fontFamily: typography.fontMono,
 		fontSize: typography.sizeMono,
 		color: colors.foreground,
-		overflowWrap: 'anywhere'
+		overflowWrap: 'anywhere',
 	},
 	hint: {
 		cursor: 'help',
 		textDecorationLine: 'underline',
 		textDecorationStyle: 'dotted',
 		textDecorationColor: colors.border,
-		textUnderlineOffset: '0.2em'
-	}
+		textUnderlineOffset: '0.2em',
+	},
 });

@@ -39,12 +39,17 @@
 	</div>
 	<div {...stylex.attrs(code.body)}>
 		{#each lines as line, index (`${index}:${line.map((token) => token.text).join('')}`)}
-			<span {...stylex.attrs(code.gutter)} aria-hidden="true">{String(index + 1).padStart(digits, ' ')}</span>
-			<pre {...stylex.attrs(code.line)}>{#each line as token, tokenIndex (`${tokenIndex}:${token.text}`)}<span
-					style:--shiki-light={token.light}
-					style:--shiki-dark={token.dark}
-					{...stylex.attrs(code.token)}>{token.text}</span
-				>{/each}</pre>
+			<span {...stylex.attrs(code.gutter)} aria-hidden="true"
+				>{String(index + 1).padStart(digits, ' ')}</span
+			>
+			<pre
+				{...stylex.attrs(
+					code.line,
+				)}>{#each line as token, tokenIndex (`${tokenIndex}:${token.text}`)}<span
+						style:--shiki-light={token.light}
+						style:--shiki-dark={token.dark}
+						{...stylex.attrs(code.token)}>{token.text}</span
+					>{/each}</pre>
 		{/each}
 	</div>
 </div>

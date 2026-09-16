@@ -12,7 +12,7 @@ const LIGHT = theme('nipuu-light', {
 	sky: '#0284C7',
 	mute: '#64748B',
 	paper: '#F7FAFC',
-	kind: 'light'
+	kind: 'light',
 });
 
 const DARK = theme('nipuu-dark', {
@@ -20,43 +20,43 @@ const DARK = theme('nipuu-dark', {
 	sky: '#38BDF8',
 	mute: '#94A3B8',
 	paper: '#0B1220',
-	kind: 'dark'
+	kind: 'dark',
 });
 
 function theme(
 	name: string,
-	swatch: { ink: string; sky: string; mute: string; paper: string; kind: 'light' | 'dark' }
+	swatch: { ink: string; sky: string; mute: string; paper: string; kind: 'light' | 'dark' },
 ): ThemeRegistration {
 	return {
 		name,
 		type: swatch.kind,
 		colors: {
 			'editor.foreground': swatch.ink,
-			'editor.background': swatch.paper
+			'editor.background': swatch.paper,
 		},
 		settings: [
 			{ settings: { foreground: swatch.ink, background: swatch.paper } },
 			{
 				scope: ['support.type.property-name.json', 'support.type.property-name'],
-				settings: { foreground: swatch.sky }
+				settings: { foreground: swatch.sky },
 			},
 			{
 				scope: ['string'],
-				settings: { foreground: swatch.ink }
+				settings: { foreground: swatch.ink },
 			},
 			{
 				scope: ['constant.numeric'],
-				settings: { foreground: swatch.ink }
+				settings: { foreground: swatch.ink },
 			},
 			{
 				scope: ['constant.language'],
-				settings: { foreground: swatch.mute }
+				settings: { foreground: swatch.mute },
 			},
 			{
 				scope: ['punctuation'],
-				settings: { foreground: swatch.mute }
-			}
-		]
+				settings: { foreground: swatch.mute },
+			},
+		],
 	};
 }
 
@@ -65,7 +65,7 @@ function getHighlighter(): Promise<Highlighter> {
 	global[HIGHLIGHTER] ??= createHighlighter({
 		engine: createJavaScriptRegexEngine(),
 		langs: ['json'],
-		themes: [LIGHT, DARK]
+		themes: [LIGHT, DARK],
 	});
 
 	return global[HIGHLIGHTER];
@@ -76,13 +76,13 @@ function tokenColors(htmlStyle: unknown): { light: string; dark: string } {
 		const vars = htmlStyle as Record<string, string>;
 		return {
 			light: vars['--shiki-light'] ?? '#0B1220',
-			dark: vars['--shiki-dark'] ?? '#F8FAFC'
+			dark: vars['--shiki-dark'] ?? '#F8FAFC',
 		};
 	}
 
 	return {
 		light: '#0B1220',
-		dark: '#F8FAFC'
+		dark: '#F8FAFC',
 	};
 }
 
@@ -109,9 +109,9 @@ export async function highlightJson(value: unknown): Promise<HighlightBlock> {
 		lang: 'json',
 		themes: {
 			light: 'nipuu-light',
-			dark: 'nipuu-dark'
+			dark: 'nipuu-dark',
 		},
-		defaultColor: false
+		defaultColor: false,
 	});
 
 	return {
@@ -122,9 +122,9 @@ export async function highlightJson(value: unknown): Promise<HighlightBlock> {
 				return {
 					text: token.content,
 					light: colors.light,
-					dark: colors.dark
+					dark: colors.dark,
 				};
-			})
-		)
+			}),
+		),
 	};
 }

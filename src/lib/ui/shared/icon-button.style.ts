@@ -18,24 +18,24 @@ export const iconButton = stylex.create({
 		transitionProperty: 'color',
 		transitionDuration: '150ms',
 		[REDUCE]: {
-			transitionDuration: '0ms'
+			transitionDuration: '0ms',
 		},
 		':hover': {
-			color: colors.foreground
+			color: colors.foreground,
 		},
 		':focus-visible': {
 			outlineWidth: 2,
 			outlineStyle: 'solid',
 			outlineColor: colors.ring,
-			outlineOffset: 2
-		}
+			outlineOffset: 2,
+		},
 	},
 	danger: {
 		':hover': {
-			color: colors.destructive
-		}
+			color: colors.destructive,
+		},
 	},
 	active: {
-		color: colors.primary
-	}
+		color: colors.primary,
+	},
 });

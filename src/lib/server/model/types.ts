@@ -51,8 +51,9 @@ export type TableFieldBuilder = {
 	};
 };
 
-export type ModelDefinition = Record<string, (t: TableFieldBuilder) => Record<string, FieldBuilder>>;
+export type ModelDefinition = Record<
+	string,
+	(t: TableFieldBuilder) => Record<string, FieldBuilder>
+>;
 
-export type ValidationResult =
-	| { ok: true; data: Payload }
-	| { ok: false; errors: string[] };
+export type ValidationResult = { ok: true; data: Payload } | { ok: false; errors: string[] };

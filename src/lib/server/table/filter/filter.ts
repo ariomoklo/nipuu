@@ -114,7 +114,7 @@ export const filter = {
 	start: isStart,
 	end: isEnd,
 	include: isInclude,
-	exclude: isExclude
+	exclude: isExclude,
 } as const;
 
 export type FilterBy = keyof typeof filter;

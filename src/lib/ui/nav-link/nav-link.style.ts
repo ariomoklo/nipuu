@@ -8,17 +8,17 @@ export const navLink = stylex.create({
 		fontWeight: typography.weightBody,
 		color: colors.mutedForeground,
 		':hover': {
-			color: colors.foreground
+			color: colors.foreground,
 		},
 		':focus-visible': {
 			outlineWidth: 2,
 			outlineStyle: 'solid',
 			outlineColor: colors.ring,
-			outlineOffset: 2
-		}
+			outlineOffset: 2,
+		},
 	},
 	current: {
 		color: colors.primary,
-		fontWeight: typography.weightStrong
-	}
+		fontWeight: typography.weightStrong,
+	},
 });

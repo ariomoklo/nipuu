@@ -10,6 +10,6 @@ export const label = stylex.create({
 		fontFamily: typography.fontBody,
 		fontSize: typography.sizeLabel,
 		fontWeight: typography.weightStrong,
-		color: colors.foreground
-	}
+		color: colors.foreground,
+	},
 });

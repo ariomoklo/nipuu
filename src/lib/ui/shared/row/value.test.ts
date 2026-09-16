@@ -11,7 +11,7 @@ function field(overrides: Partial<TableFieldMeta> = {}): TableFieldMeta {
 		operators: ['eq'],
 		autoId: false,
 		identity: false,
-		...overrides
+		...overrides,
 	};
 }
 
@@ -56,7 +56,7 @@ describe('rowIdentity', () => {
 	it('collects identity fields only', () => {
 		const fields = [field({ name: 'id', type: 'id.index', identity: true }), field(), owner];
 		expect(rowIdentity({ id: 7, title: 'Todo 7', owner: { id: 'u-1' } }, fields)).toEqual({
-			id: '7'
+			id: '7',
 		});
 	});
 });

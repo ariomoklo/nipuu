@@ -10,7 +10,7 @@ import {
 	query,
 	relationOptions,
 	toFieldMeta,
-	type Table
+	type Table,
 } from '$lib/server/table';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -36,7 +36,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		q: parsed.search,
 		values: parsed.values,
 		operators: parsed.operators,
-		relations: relationOptions(table, getTables())
+		relations: relationOptions(table, getTables()),
 	};
 };
 
@@ -51,5 +51,5 @@ export const actions: Actions = {
 		const removed = deleteRow(table, ids);
 		if (!removed) return fail(404, { errors: ['Row not found'], action: 'delete' });
 		redirect(303, `${INSPECTOR_URL}/tables/${table.schema.name}`);
-	}
+	},
 };

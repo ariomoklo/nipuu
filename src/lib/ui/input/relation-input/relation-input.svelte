@@ -11,7 +11,7 @@
 		name,
 		value = '',
 		options,
-		placeholder
+		placeholder,
 	}: {
 		name: string;
 		value?: string;
@@ -40,7 +40,7 @@
 		return options.filter(
 			(option) =>
 				option.value.toLowerCase().includes(search) ||
-				(option.label?.toLowerCase().includes(search) ?? false)
+				(option.label?.toLowerCase().includes(search) ?? false),
 		);
 	});
 
@@ -50,7 +50,7 @@
 	const posted = $derived.by(() => {
 		const search = text.trim().toLowerCase();
 		const exact = options.find(
-			(option) => option.value.toLowerCase() === search || option.label?.toLowerCase() === search
+			(option) => option.value.toLowerCase() === search || option.label?.toLowerCase() === search,
 		);
 		return exact?.value ?? text;
 	});
@@ -97,7 +97,7 @@
 			if (!open) return show(false);
 			wanted = Math.min(
 				Math.max(active + (event.key === 'ArrowDown' ? 1 : -1), 0),
-				matches.length - 1
+				matches.length - 1,
 			);
 			return;
 		}

@@ -6,7 +6,7 @@ const PICKER_INSET = '1.75rem';
 
 export const combobox = stylex.create({
 	input: {
-		paddingInlineEnd: PICKER_INSET
+		paddingInlineEnd: PICKER_INSET,
 	},
 	listbox: {
 		position: 'absolute',
@@ -23,7 +23,7 @@ export const combobox = stylex.create({
 		borderWidth: 1,
 		borderStyle: 'solid',
 		borderColor: colors.border,
-		borderRadius: radius.control
+		borderRadius: radius.control,
 	},
 	option: {
 		display: 'flex',
@@ -36,13 +36,13 @@ export const combobox = stylex.create({
 		fontFamily: typography.fontBody,
 		fontSize: typography.sizeLabel,
 		color: colors.foreground,
-		cursor: 'pointer'
+		cursor: 'pointer',
 	},
 	optionActive: {
-		backgroundColor: colors.muted
+		backgroundColor: colors.muted,
 	},
 	optionLabel: {
-		whiteSpace: 'nowrap'
+		whiteSpace: 'nowrap',
 	},
 	optionValue: {
 		minWidth: 0,
@@ -51,13 +51,13 @@ export const combobox = stylex.create({
 		fontSize: typography.sizeMono,
 		color: colors.mutedForeground,
 		whiteSpace: 'nowrap',
-		textOverflow: 'ellipsis'
+		textOverflow: 'ellipsis',
 	},
 	empty: {
 		fontFamily: typography.fontBody,
 		fontSize: typography.sizeLabel,
 		color: colors.mutedForeground,
 		paddingInline: space.sm,
-		paddingBlock: space.xs
-	}
+		paddingBlock: space.xs,
+	},
 });

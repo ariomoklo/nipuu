@@ -8,7 +8,7 @@ function parsePattern(pattern: string): Segment[] {
 		.map((segment) =>
 			segment.startsWith(':')
 				? { type: 'param', name: segment.slice(1) }
-				: { type: 'static', value: segment }
+				: { type: 'static', value: segment },
 		);
 }
 
@@ -42,7 +42,7 @@ export type MatchResult = {
 export function matchRoute(
 	routes: Record<string, Record<string, unknown>>,
 	method: string,
-	pathname: string
+	pathname: string,
 ): MatchResult | null {
 	for (const [pattern, methods] of Object.entries(routes)) {
 		const params = matchPath(pattern, pathname);
@@ -52,7 +52,7 @@ export function matchRoute(
 			pattern,
 			method,
 			handler: methods[method],
-			params
+			params,
 		};
 	}
 

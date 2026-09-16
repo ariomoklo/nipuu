@@ -16,7 +16,7 @@ export const colors = stylex.defineVars({
 	border: { default: '#E2E8F0', [DARK]: '#1E293B' },
 	overlay: { default: 'rgb(11 18 32 / 0.4)', [DARK]: 'rgb(2 6 16 / 0.6)' },
 	input: { default: '#E2E8F0', [DARK]: '#1E293B' },
-	ring: { default: '#0284C7', [DARK]: '#38BDF8' }
+	ring: { default: '#0284C7', [DARK]: '#38BDF8' },
 });
 
 export const typography = stylex.defineVars({
@@ -32,7 +32,7 @@ export const typography = stylex.defineVars({
 	weightStrong: '600',
 	weightBody: '400',
 	lineBody: '1.5',
-	lineTight: '1.15'
+	lineTight: '1.15',
 });
 
 export const space = stylex.defineVars({
@@ -41,9 +41,9 @@ export const space = stylex.defineVars({
 	md: '1rem',
 	lg: '1.5rem',
 	xl: '2.5rem',
-	xxl: '4rem'
+	xxl: '4rem',
 });
 
 export const radius = stylex.defineVars({
-	control: '0.25rem'
+	control: '0.25rem',
 });

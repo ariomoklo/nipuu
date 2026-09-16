@@ -38,7 +38,7 @@ export function destroy(table: Table) {
 export function on<T extends TableLifecycle>(
 	table: Table,
 	event: T,
-	callback: SetItem<(typeof table.lifecycles)[T]>
+	callback: SetItem<(typeof table.lifecycles)[T]>,
 ) {
 	const fnSet = table.lifecycles[event] as Set<typeof callback>;
 	fnSet.add(callback);
@@ -64,5 +64,5 @@ export function broadcast<T extends TableLifecycle>(
 }
 
 export function flush(table: Table): Promise<void> {
-	return Promise.all([...table.pending]).then(() => undefined);
+	return Promise.all(table.pending).then(() => undefined);
 }

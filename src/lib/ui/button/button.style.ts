@@ -23,30 +23,30 @@ export const button = stylex.create({
 		transitionProperty: 'background-color, color, border-color',
 		transitionDuration: '150ms',
 		[REDUCE]: {
-			transitionDuration: '0ms'
+			transitionDuration: '0ms',
 		},
 		':focus-visible': {
 			outlineWidth: 2,
 			outlineStyle: 'solid',
 			outlineColor: colors.ring,
-			outlineOffset: 2
-		}
+			outlineOffset: 2,
+		},
 	},
 	primary: {
 		backgroundColor: colors.primary,
 		color: colors.primaryForeground,
 		borderColor: colors.primary,
 		':hover': {
-			opacity: 0.9
-		}
+			opacity: 0.9,
+		},
 	},
 	ghost: {
 		backgroundColor: 'transparent',
 		color: colors.foreground,
 		borderColor: 'transparent',
 		':hover': {
-			color: colors.primary
-		}
+			color: colors.primary,
+		},
 	},
 	destructive: {
 		backgroundColor: 'transparent',
@@ -54,7 +54,7 @@ export const button = stylex.create({
 		borderColor: colors.destructive,
 		':hover': {
 			backgroundColor: colors.destructive,
-			color: colors.destructiveForeground
-		}
-	}
+			color: colors.destructiveForeground,
+		},
+	},
 });

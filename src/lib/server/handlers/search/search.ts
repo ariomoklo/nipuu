@@ -1,7 +1,11 @@
 import type { Row } from '$lib/server/model';
 import { projectRowScalar, requireTable } from '$lib/server/handlers/project';
 import { json, mapResponse } from '$lib/server/handlers/respond';
-import { resolveValue, toRouteFilters, type DispatchContext } from '$lib/server/handlers/sources/sources';
+import {
+	resolveValue,
+	toRouteFilters,
+	type DispatchContext,
+} from '$lib/server/handlers/sources/sources';
 import { lookup, type Table } from '$lib/server/table';
 import type { RouteHandlerObject } from '$lib/types';
 
@@ -22,7 +26,7 @@ function compare(a: unknown, b: unknown, sign: number): number {
 function sortRows(rows: Row[], table: Table, sortBy: unknown, orderBy: unknown): Row[] {
 	if (typeof sortBy !== 'string' || !table.schema.fields[sortBy]) return rows;
 	const sign = orderBy === 'desc' ? -1 : 1;
-	return [...rows].sort((left, right) => {
+	return rows.toSorted((left, right) => {
 		const a = projectRowScalar(left, table)[sortBy];
 		const b = projectRowScalar(right, table)[sortBy];
 		if (a == null && b == null) return 0;
@@ -58,7 +62,7 @@ export function searchAction(handler: RouteHandlerObject, context: DispatchConte
 		matched,
 		table,
 		sort && typeof sort === 'object' ? resolveValue(sort.sortBy, context) : undefined,
-		sort && typeof sort === 'object' ? resolveValue(sort.orderBy, context) : undefined
+		sort && typeof sort === 'object' ? resolveValue(sort.orderBy, context) : undefined,
 	);
 	const page = paginate(sorted, handler, context).map((row) => projectRowScalar(row, table));
 	return mapResponse(handler, page);

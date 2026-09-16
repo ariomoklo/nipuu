@@ -1,20 +1,20 @@
 {
 	"name": "nipuu",
 	"version": "0.0.2",
-	"license": "UNLICENSED",
-	"description": "Mock API CLI with an in-memory MODEL/ROUTE runtime and a SvelteKit inspector",
-	"type": "module",
+	"description": "Easy and robust mocking API tools for all your needs",
+	"license": "MIT",
 	"bin": {
 		"nipuu": "src/cli.js"
-	},
-	"publishConfig": {
-		"access": "public"
 	},
 	"files": [
 		"src",
 		"vite.config.ts",
 		"tsconfig.json"
 	],
+	"type": "module",
+	"publishConfig": {
+		"access": "public"
+	},
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
@@ -24,7 +24,11 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test": "vitest run --project unit",
 		"test:watch": "vitest --project unit",
-		"test:mock": "vitest run --project mock"
+		"test:mock": "vitest run --project mock",
+		"test:coverage": "vitest run --project unit --coverage",
+		"lint": "oxlint src vite.config.ts vitest.config.ts",
+		"format": "oxfmt src vite.config.ts vitest.config.ts package.json .github",
+		"format:check": "oxfmt --check src vite.config.ts vitest.config.ts package.json .github"
 	},
 	"dependencies": {
 		"@fontsource-variable/bricolage-grotesque": "^5.3.0",
@@ -41,7 +45,10 @@
 	},
 	"devDependencies": {
 		"@types/node": "^26.4.1",
+		"@vitest/coverage-v8": "^5.0.1",
 		"husky": "^9.1.7",
+		"oxfmt": "^0.68.0",
+		"oxlint": "^1.83.0",
 		"svelte-check": "^4.6.0",
 		"typescript": "^6.0.3",
 		"vitest": "^5.0.0"

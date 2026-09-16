@@ -96,7 +96,8 @@
 <h1 {...stylex.attrs(chrome.title)}>{data.name}</h1>
 <span {...stylex.attrs(chrome.titleMark)} aria-hidden="true"></span>
 <p {...stylex.attrs(chrome.detailMeta)}>
-	{data.total} {data.total === 1 ? 'row' : 'rows'} ・ {data.fields.length} properties ・ Page {data.page}
+	{data.total}
+	{data.total === 1 ? 'row' : 'rows'} ・ {data.fields.length} properties ・ Page {data.page}
 	of {pageCount}
 </p>
 
@@ -158,7 +159,7 @@
 							{...stylex.attrs(
 								tableStyles.td,
 								field.identity && browser.cellStrong,
-								text === '—' && browser.cellEmpty
+								text === '—' && browser.cellEmpty,
 							)}
 						>
 							<span {...stylex.attrs(browser.cellText)} title={cellTitle(row, field)}>{text}</span>

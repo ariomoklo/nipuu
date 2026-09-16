@@ -10,7 +10,7 @@
 	const logsCurrent = $derived(
 		page.url.pathname === INSPECTOR_URL ||
 			page.url.pathname === `${INSPECTOR_URL}/` ||
-			page.url.pathname.startsWith(`${INSPECTOR_URL}/requests`)
+			page.url.pathname.startsWith(`${INSPECTOR_URL}/requests`),
 	);
 	const tablesCurrent = $derived(page.url.pathname.startsWith(`${INSPECTOR_URL}/tables`));
 </script>

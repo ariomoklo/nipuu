@@ -27,8 +27,8 @@ export const load: PageServerLoad = async () => {
 				name: schema.name,
 				rowCount: getTable(schema.name)?.rows.length ?? 0,
 				propertyCount: Object.keys(schema.fields).length,
-				relatedModels: [...relatedModels]
+				relatedModels: [...relatedModels],
 			};
-		})
+		}),
 	};
 };

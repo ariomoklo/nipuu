@@ -12,7 +12,7 @@ export function bindRelations(table: Table, tables: Map<string, Table>) {
 		const related = tables.get(field.rel.table);
 		if (!related) {
 			throw new Error(
-				`Cannot bind ${field.name}: table with "${field.rel.table}" name, does not exist`
+				`Cannot bind ${field.name}: table with "${field.rel.table}" name, does not exist`,
 			);
 		}
 
@@ -32,7 +32,7 @@ export function hydrateRelations(table: Table, tables: Map<string, Table>) {
 		const related = tables.get(field.rel.table);
 		if (!related) {
 			throw new Error(
-				`Cannot seed ${field.name}: table with "${field.rel.table}" name, does not exist`
+				`Cannot seed ${field.name}: table with "${field.rel.table}" name, does not exist`,
 			);
 		}
 
@@ -68,7 +68,7 @@ function optionText(row: Row, name: string): string | undefined {
 /** Existing values a relation field can point at, for pickers in the inspector. */
 export function relationOptions(
 	table: Table,
-	tables: Map<string, Table>
+	tables: Map<string, Table>,
 ): Record<string, TableRelationOption[]> {
 	const options: Record<string, TableRelationOption[]> = {};
 
@@ -105,7 +105,7 @@ export function relationOptions(
  */
 export function resolveRelationLabels(
 	form: FormData,
-	options: Record<string, TableRelationOption[]>
+	options: Record<string, TableRelationOption[]>,
 ) {
 	for (const [name, list] of Object.entries(options)) {
 		const typed = form.get(name);
@@ -118,7 +118,12 @@ export function resolveRelationLabels(
 	}
 }
 
-export function syncRelation(table: Table, field: FieldSchema, sourceRow: Row, sourceIndex: number) {
+export function syncRelation(
+	table: Table,
+	field: FieldSchema,
+	sourceRow: Row,
+	sourceIndex: number,
+) {
 	const omit = field.rel?.omit ?? [];
 	for (const row of table.rows) {
 		const item = row[field.name];

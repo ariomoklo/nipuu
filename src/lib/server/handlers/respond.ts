@@ -4,14 +4,14 @@ import type { RouteHandlerObject } from '$lib/types';
 export function json(data: unknown, status = 200): Response {
 	return new Response(JSON.stringify(data), {
 		status,
-		headers: { 'content-type': 'application/json' }
+		headers: { 'content-type': 'application/json' },
 	});
 }
 
 export function text(value: string | number | boolean | bigint, status = 200): Response {
 	return new Response(String(value), {
 		status,
-		headers: { 'content-type': 'text/plain; charset=utf-8' }
+		headers: { 'content-type': 'text/plain; charset=utf-8' },
 	});
 }
 

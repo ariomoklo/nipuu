@@ -7,7 +7,7 @@ export const field = stylex.create({
 		position: 'relative',
 		display: 'block',
 		width: '100%',
-		maxWidth: '24rem'
+		maxWidth: '24rem',
 	},
 	marker: {
 		position: 'absolute',
@@ -16,7 +16,7 @@ export const field = stylex.create({
 		transform: 'translateY(-50%)',
 		display: 'flex',
 		color: colors.mutedForeground,
-		pointerEvents: 'none'
+		pointerEvents: 'none',
 	},
 	toggle: {
 		margin: 0,
@@ -28,7 +28,7 @@ export const field = stylex.create({
 		pointerEvents: 'auto',
 		cursor: 'pointer',
 		':hover': {
-			color: colors.foreground
-		}
-	}
+			color: colors.foreground,
+		},
+	},
 });

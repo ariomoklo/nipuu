@@ -24,14 +24,14 @@ function isNumber(value: unknown) {
 function isEnumValue(value: unknown, conf: FieldSchema) {
 	return {
 		ok: typeof value === 'string' && Boolean(conf.enum?.includes(value)),
-		message: 'Must be a valid enum value'
+		message: 'Must be a valid enum value',
 	};
 }
 
 function isIndexId(value: unknown) {
 	return {
 		ok: typeof value === 'number' && Number.isInteger(value),
-		message: 'Must be an integer'
+		message: 'Must be an integer',
 	};
 }
 
@@ -45,5 +45,5 @@ export const validator: Record<FieldKind, Validator> = {
 	number: isNumber,
 	enum: isEnumValue,
 	'id.index': isIndexId,
-	'id.uuid': isUuid
+	'id.uuid': isUuid,
 };

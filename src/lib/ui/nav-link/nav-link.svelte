@@ -6,7 +6,7 @@
 	let {
 		href,
 		current = false,
-		children
+		children,
 	}: { href: string; current?: boolean; children?: Snippet } = $props();
 </script>
 

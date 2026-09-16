@@ -108,7 +108,7 @@ describe('toFilters', () => {
 	it('turns a record into eq filters', () => {
 		expect(toFilters({ id: 1, title: 'Note' })).toEqual([
 			{ key: 'id', value: 1, by: 'eq' },
-			{ key: 'title', value: 'Note', by: 'eq' }
+			{ key: 'title', value: 'Note', by: 'eq' },
 		]);
 	});
 

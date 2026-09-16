@@ -6,7 +6,7 @@ export const MODEL = {
 			.required()
 			.factory(({ index }) => `Todo ${index}`),
 		owner: t.id.uuid().required().rel('users', { field: 'id' }),
-		completed: t.boolean().default(false)
+		completed: t.boolean().default(false),
 	}),
 	users: (t) => ({
 		id: t.id.uuid(),
@@ -17,22 +17,22 @@ export const MODEL = {
 		email: t
 			.string()
 			.required()
-			.factory(({ index }) => `user.${index}@example.com`)
-	})
+			.factory(({ index }) => `user.${index}@example.com`),
+	}),
 };
 
 export const ROUTE = {
 	'/': {
 		GET: {
 			action: 'static',
-			response: 'Hello!'
-		}
+			response: 'Hello!',
+		},
 	},
 	'/users': {
 		GET: {
 			action: 'search',
-			model: 'users'
-		}
+			model: 'users',
+		},
 	},
 	'/todos': {
 		GET: {
@@ -40,52 +40,52 @@ export const ROUTE = {
 			model: 'todos',
 			filter: {
 				title: { source: 'queries', key: 'q', by: 'include' },
-				completed: { source: 'queries', key: 'completed', by: 'equal' }
-			}
+				completed: { source: 'queries', key: 'completed', by: 'equal' },
+			},
 		},
 		POST: {
 			action: 'upsert',
-			model: 'todos'
-		}
+			model: 'todos',
+		},
 	},
 	'/todos/:id': {
 		GET: {
 			action: 'find',
 			model: 'todos',
 			where: {
-				id: { source: 'params', key: 'id', by: 'equal' }
-			}
+				id: { source: 'params', key: 'id', by: 'equal' },
+			},
 		},
 		PUT: {
 			action: 'update',
 			model: 'todos',
 			where: {
-				id: { source: 'params', key: 'id' }
+				id: { source: 'params', key: 'id' },
 			},
 			update: {
 				title: { source: 'body', key: 'title' },
 				owner: { source: 'body', key: 'owner' },
-				completed: { source: 'body', key: 'completed' }
-			}
+				completed: { source: 'body', key: 'completed' },
+			},
 		},
 		DELETE: {
 			action: 'delete',
 			model: 'todos',
 			where: {
-				id: { source: 'params', key: 'id' }
-			}
-		}
+				id: { source: 'params', key: 'id' },
+			},
+		},
 	},
 	'/todos/:id/toggle': {
 		PUT: {
 			action: 'update',
 			model: 'todos',
 			where: {
-				id: { source: 'params', key: 'id', by: 'equal' }
+				id: { source: 'params', key: 'id', by: 'equal' },
 			},
 			update: {
-				completed: (todo) => !todo.completed
-			}
-		}
-	}
+				completed: (todo) => !todo.completed,
+			},
+		},
+	},
 };

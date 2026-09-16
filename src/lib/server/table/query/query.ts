@@ -1,10 +1,6 @@
 import type { Row, Schema } from '$lib/server/model/types';
 import type { FilterSchema } from '$lib/server/table/filter/filter';
-import {
-	clampLimit,
-	clampPage,
-	TABLE_PAGE_DEFAULT
-} from '$lib/server/table/query/parse';
+import { clampLimit, clampPage, TABLE_PAGE_DEFAULT } from '$lib/server/table/query/parse';
 import { filterValue, projectRow } from '$lib/server/table/row';
 import { lookup, type Table } from '$lib/server/table/store/store';
 import type { TableQueryPage } from '$lib/types/table';
@@ -48,7 +44,7 @@ export function query(
 		search?: string;
 		page?: number;
 		limit?: number;
-	} = {}
+	} = {},
 ): TableQueryPage {
 	const filters = input.filters ?? [];
 	const search = input.search?.trim() ?? '';
@@ -67,6 +63,6 @@ export function query(
 		rows: searched.slice(start, start + limit).map(projectRow),
 		total,
 		page,
-		limit
+		limit,
 	};
 }

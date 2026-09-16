@@ -9,21 +9,21 @@ export const editor = stylex.create({
 		gap: space.lg,
 		minWidth: '18rem',
 		paddingTop: space.md,
-		paddingBottom: space.sm
+		paddingBottom: space.sm,
 	},
 	form: {
 		display: 'flex',
 		flexDirection: 'column',
 		alignItems: 'flex-start',
 		gap: space.md,
-		width: '100%'
+		width: '100%',
 	},
 	grid: {
 		display: 'flex',
 		flexDirection: 'column',
 		gap: space.md,
 		width: '100%',
-		maxWidth: '24rem'
+		maxWidth: '24rem',
 	},
 	errorList: {
 		margin: 0,
@@ -31,6 +31,6 @@ export const editor = stylex.create({
 		padding: 0,
 		paddingInlineStart: space.md,
 		color: colors.destructive,
-		fontSize: typography.sizeBody
-	}
+		fontSize: typography.sizeBody,
+	},
 });

@@ -7,7 +7,7 @@ import {
 	filterValue,
 	isFieldItem,
 	omitRow,
-	projectRow
+	projectRow,
 } from '$lib/server/table/row';
 
 const TABLES_KEY = Symbol.for('nipuu.tables');
@@ -40,7 +40,7 @@ function relationFromScalar(field: FieldSchema, value: unknown) {
 
 	return {
 		index: sourceIndex,
-		row: omitRow(related.rows[sourceIndex], field.rel!.omit)
+		row: omitRow(related.rows[sourceIndex], field.rel!.omit),
 	};
 }
 
@@ -57,7 +57,7 @@ function buildRow(table: Table, payload: Payload): Row {
 		row[field.name] = createFieldItem(
 			`${table.schema.name}.${field.name}`,
 			field.rel ? relationFromScalar(field, raw) : raw,
-			Boolean(field.rel)
+			Boolean(field.rel),
 		);
 	}
 
@@ -77,7 +77,7 @@ function applyPatch(table: Table, row: Row, patch: Payload) {
 			row[key] = createFieldItem(
 				`${table.schema.name}.${field.name}`,
 				relationFromScalar(field, value),
-				true
+				true,
 			);
 			continue;
 		}
@@ -108,7 +108,7 @@ function fillMissingIds(table: Table, row: Row) {
 		row[schema.name] = createFieldItem(
 			`${table.schema.name}.${schema.name}`,
 			schema.type === 'id.index' ? table.rows.length + 1 : crypto.randomUUID(),
-			false
+			false,
 		);
 	}
 }
@@ -118,14 +118,12 @@ function generateFieldValue(table: Table, field: FieldSchema, index: number) {
 		const related = getTable(field.rel.table);
 		if (!related) {
 			throw new Error(
-				`Cannot seed ${field.name}: table with "${field.rel.table}" name, does not exist`
+				`Cannot seed ${field.name}: table with "${field.rel.table}" name, does not exist`,
 			);
 		}
 
 		if (related.seedCount === 0) {
-			throw new Error(
-				`Cannot seed ${field.name}: related table "${field.rel.table}" has no rows`
-			);
+			throw new Error(`Cannot seed ${field.name}: related table "${field.rel.table}" has no rows`);
 		}
 
 		return { index: Math.floor(Math.random() * related.seedCount), row: {} };
@@ -159,9 +157,9 @@ export function createTable(schema: Schema, seedCount: number): Table {
 		lifecycles: {
 			'after.seed': new Set(),
 			update: new Set(),
-			upsert: new Set()
+			upsert: new Set(),
 		},
-		destroyRef: new Set()
+		destroyRef: new Set(),
 	};
 }
 
@@ -183,7 +181,7 @@ export function lookup(table: Table, type: 'find' | 'filter', cond: FilterSchema
 
 export function find(
 	table: Table,
-	cond: Record<string, unknown> | FilterSchema[] = []
+	cond: Record<string, unknown> | FilterSchema[] = [],
 ): Payload | undefined {
 	const found = lookup(table, 'find', toFilters(cond));
 	if (!found || Array.isArray(found)) return undefined;
@@ -223,7 +221,7 @@ export function upsert(table: Table, payload: Payload): Row {
 export function update(
 	table: Table,
 	cond: Record<string, unknown> | FilterSchema[],
-	patch: Payload
+	patch: Payload,
 ): Row | undefined {
 	const found = lookup(table, 'find', toFilters(cond));
 	if (!found || Array.isArray(found)) return undefined;
@@ -236,7 +234,7 @@ export function update(
 
 export function deleteRow(
 	table: Table,
-	cond: Record<string, unknown> | FilterSchema[]
+	cond: Record<string, unknown> | FilterSchema[],
 ): Row | undefined {
 	const found = lookup(table, 'find', toFilters(cond));
 	if (!found || Array.isArray(found)) return undefined;
@@ -252,7 +250,7 @@ export function seed(table: Table) {
 			row[field.name] = createFieldItem(
 				`${table.schema.name}.${field.name}`,
 				generateFieldValue(table, field, index),
-				Boolean(field.rel)
+				Boolean(field.rel),
 			);
 		}
 

@@ -13,7 +13,7 @@ export const load: PageServerLoad = async ({ params }) => {
 		highlightJson(log.requestHeaders),
 		highlightJson(log.requestBody),
 		highlightJson(log.responseHeaders),
-		highlightJson(log.responseBody)
+		highlightJson(log.responseBody),
 	]);
 
 	return {
@@ -22,7 +22,7 @@ export const load: PageServerLoad = async ({ params }) => {
 			requestHeaders,
 			requestBody,
 			responseHeaders,
-			responseBody
-		}
+			responseBody,
+		},
 	};
 };

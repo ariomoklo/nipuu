@@ -6,7 +6,7 @@ export function validate(
 	store: Store,
 	tableName: string,
 	payload: unknown,
-	options: { partial?: boolean } = {}
+	options: { partial?: boolean } = {},
 ): ValidationResult {
 	const table = tables.find((item) => item.name === tableName);
 	if (!table) {
@@ -53,7 +53,7 @@ export function validate(
 			const exists = related.some((row) => row[field.rel!.field]?.value === value);
 			if (!exists) {
 				errors.push(
-					`${field.name} does not reference an existing ${field.rel.table}.${field.rel.field}`
+					`${field.name} does not reference an existing ${field.rel.table}.${field.rel.field}`,
 				);
 			}
 		}

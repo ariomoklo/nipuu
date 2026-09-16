@@ -13,7 +13,7 @@ import {
 	toFieldMeta,
 	toStore,
 	update,
-	type Table
+	type Table,
 } from '$lib/server/table';
 import type { TableFieldMeta } from '$lib/types/table';
 import type { Actions, PageServerLoad } from './$types';
@@ -28,7 +28,7 @@ async function requireTable(name: string): Promise<Table> {
 /** Identity condition from the query string, e.g. `?id=7`. */
 function identityFromQuery(
 	fields: TableFieldMeta[],
-	params: URLSearchParams
+	params: URLSearchParams,
 ): Record<string, unknown> {
 	const cond: Record<string, unknown> = {};
 	for (const field of fields) {
@@ -69,12 +69,12 @@ export const actions: Actions = {
 		resolveRelationLabels(form, relationOptions(table, getTables()));
 		const payload = payloadFromForm(table.schema, form, 'update');
 		const result = validate([table.schema], toStore(), table.schema.name, payload, {
-			partial: true
+			partial: true,
 		});
 		if (!result.ok) return fail(400, { errors: result.errors });
 
 		const updated = update(table, ids, result.data);
 		if (!updated) return fail(404, { errors: ['Row not found'] });
 		redirect(303, `${INSPECTOR_URL}/tables/${table.schema.name}`);
-	}
+	},
 };

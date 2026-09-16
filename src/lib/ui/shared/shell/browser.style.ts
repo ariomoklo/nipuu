@@ -6,11 +6,11 @@ export const browser = stylex.create({
 		display: 'flex',
 		alignItems: 'center',
 		justifyContent: 'flex-end',
-		gap: space.xs
+		gap: space.xs,
 	},
 	newRowCell: {
 		paddingInline: 0,
-		borderBottomWidth: 0
+		borderBottomWidth: 0,
 	},
 	newRow: {
 		display: 'flex',
@@ -26,37 +26,37 @@ export const browser = stylex.create({
 		color: colors.mutedForeground,
 		textDecorationLine: 'none',
 		':hover': {
-			color: colors.foreground
+			color: colors.foreground,
 		},
 		':focus-visible': {
 			outlineWidth: 2,
 			outlineStyle: 'solid',
 			outlineColor: colors.ring,
-			outlineOffset: 2
-		}
+			outlineOffset: 2,
+		},
 	},
 	toolbar: {
 		display: 'flex',
 		alignItems: 'center',
 		gap: space.sm,
-		marginTop: space.xl
+		marginTop: space.xl,
 	},
 	searchForm: {
 		display: 'flex',
 		flex: 1,
-		maxWidth: '24rem'
+		maxWidth: '24rem',
 	},
 	filterGrid: {
 		display: 'grid',
 		gridTemplateColumns: 'repeat(auto-fit, minmax(14rem, 1fr))',
 		alignItems: 'end',
-		gap: space.md
+		gap: space.md,
 	},
 	filterPair: {
 		display: 'grid',
 		gridTemplateColumns: 'minmax(0, 6.5rem) minmax(0, 1fr)',
 		gap: space.sm,
-		alignSelf: 'stretch'
+		alignSelf: 'stretch',
 	},
 	cellText: {
 		display: 'inline-block',
@@ -64,17 +64,17 @@ export const browser = stylex.create({
 		overflow: 'hidden',
 		textOverflow: 'ellipsis',
 		whiteSpace: 'nowrap',
-		verticalAlign: 'bottom'
+		verticalAlign: 'bottom',
 	},
 	cellStrong: {
-		fontWeight: typography.weightStrong
+		fontWeight: typography.weightStrong,
 	},
 	cellEmpty: {
-		color: colors.mutedForeground
+		color: colors.mutedForeground,
 	},
 	cellActions: {
 		width: '1%',
-		whiteSpace: 'nowrap'
+		whiteSpace: 'nowrap',
 	},
 	pager: {
 		display: 'flex',
@@ -84,6 +84,6 @@ export const browser = stylex.create({
 		marginBlock: space.lg,
 		fontFamily: typography.fontMono,
 		fontSize: typography.sizeMono,
-		color: colors.mutedForeground
-	}
+		color: colors.mutedForeground,
+	},
 });

@@ -5,7 +5,7 @@ const UNITS = [
 	[7, 'day'],
 	[4.34524, 'week'],
 	[12, 'month'],
-	[Number.POSITIVE_INFINITY, 'year']
+	[Number.POSITIVE_INFINITY, 'year'],
 ] as const;
 
 const FORMAT = new Intl.RelativeTimeFormat('en', { numeric: 'always' });

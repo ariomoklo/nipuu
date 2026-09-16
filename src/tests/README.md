@@ -4,12 +4,12 @@ Black-box HTTP scenarios for the Nipuu mock server. These are not colocated unit
 
 ## Directory
 
-| File | Role |
-|---|---|
-| `config.mjs` | Fixture `MODEL` + `ROUTE` loaded by the CLI |
-| `client.ts` | Start/stop the CLI and `fetch` helper |
-| `mockserver.test.ts` | QA journeys (happy path and negatives) |
-| `README.md` | This file: flow, order, and scenario catalog |
+| File                 | Role                                         |
+| -------------------- | -------------------------------------------- |
+| `config.mjs`         | Fixture `MODEL` + `ROUTE` loaded by the CLI  |
+| `client.ts`          | Start/stop the CLI and `fetch` helper        |
+| `mockserver.test.ts` | QA journeys (happy path and negatives)       |
+| `README.md`          | This file: flow, order, and scenario catalog |
 
 Run:
 

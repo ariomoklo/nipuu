@@ -3,7 +3,7 @@ import type {
 	FieldBuilder,
 	FieldKind,
 	FieldSchema,
-	TableFieldBuilder
+	TableFieldBuilder,
 } from '$lib/server/model/types';
 
 type FieldState = {
@@ -19,7 +19,7 @@ const unset: FieldState = {
 	hasDefault: false,
 	defaultValue: undefined,
 	factory: undefined,
-	rel: undefined
+	rel: undefined,
 };
 
 export const compileField: unique symbol = Symbol('nipuu.compileField');
@@ -44,8 +44,8 @@ export function field(type: FieldKind, state: FieldState = unset): CompilableFie
 			hasDefault: state.hasDefault,
 			defaultValue: state.defaultValue,
 			factory: state.factory,
-			rel: state.rel
-		})
+			rel: state.rel,
+		}),
 	};
 }
 
@@ -56,8 +56,8 @@ export function fields(): TableFieldBuilder {
 		number: () => field('number'),
 		id: {
 			index: () => field('id.index'),
-			uuid: () => field('id.uuid')
-		}
+			uuid: () => field('id.uuid'),
+		},
 	};
 }
 

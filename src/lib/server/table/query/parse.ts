@@ -10,7 +10,7 @@ const OPERATORS_BY_KIND: Record<FieldKind, FilterBy[]> = {
 	number: ['eq', 'neq', 'gt', 'gte', 'lt', 'lte'],
 	'id.index': ['eq', 'neq', 'gt', 'gte', 'lt', 'lte'],
 	boolean: ['eq', 'neq'],
-	enum: ['eq', 'neq']
+	enum: ['eq', 'neq'],
 };
 
 function isFilterBy(value: string): value is FilterBy {
@@ -72,7 +72,7 @@ export function toFieldMeta(field: FieldSchema): TableFieldMeta {
 		rel: field.rel ? { table: field.rel.table, field: field.rel.field } : undefined,
 		operators: [...OPERATORS_BY_KIND[field.type]],
 		autoId: isAutoIdField(field),
-		identity: isIdentityField(field)
+		identity: isIdentityField(field),
 	};
 }
 

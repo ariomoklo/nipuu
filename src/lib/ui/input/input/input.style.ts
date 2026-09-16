@@ -22,7 +22,7 @@ export const input = stylex.create({
 			outlineWidth: 2,
 			outlineStyle: 'solid',
 			outlineColor: colors.ring,
-			outlineOffset: 2
-		}
-	}
+			outlineOffset: 2,
+		},
+	},
 });

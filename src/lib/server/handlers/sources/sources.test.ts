@@ -3,7 +3,7 @@ import { generateSchemas, type ModelDefinition } from '$lib/server/model';
 import {
 	resolveValue,
 	toRouteFilters,
-	type DispatchContext
+	type DispatchContext,
 } from '$lib/server/handlers/sources/sources';
 import { createTables, getTable, resetTables } from '$lib/server/table';
 
@@ -14,8 +14,8 @@ const model: ModelDefinition = {
 			.string()
 			.required()
 			.factory(({ index }) => `Todo ${index}`),
-		completed: t.boolean().default(false)
-	})
+		completed: t.boolean().default(false),
+	}),
 };
 
 const empty: DispatchContext = { params: {}, queries: {}, body: null };
@@ -29,7 +29,7 @@ describe('resolveValue', () => {
 		const context: DispatchContext = {
 			params: { id: '3' },
 			queries: { q: 'Todo' },
-			body: { title: 'Hi' }
+			body: { title: 'Hi' },
 		};
 		expect(resolveValue({ source: 'params', key: 'id' }, context)).toBe('3');
 		expect(resolveValue({ source: 'queries', key: 'q' }, context)).toBe('Todo');
@@ -51,15 +51,15 @@ describe('toRouteFilters', () => {
 			{
 				title: { source: 'queries', key: 'q', by: 'include' },
 				completed: { source: 'queries', key: 'completed', by: 'equal' },
-				id: { source: 'params', key: 'id' }
+				id: { source: 'params', key: 'id' },
 			},
 			{ params: { id: '1' }, queries: { q: 'odo', completed: 'false' }, body: null },
-			'filter'
+			'filter',
 		);
 		expect(filters).toEqual([
 			{ key: 'title', value: 'odo', by: 'include' },
 			{ key: 'completed', value: false, by: 'eq' },
-			{ key: 'id', value: 1, by: 'eq' }
+			{ key: 'id', value: 1, by: 'eq' },
 		]);
 	});
 
@@ -69,7 +69,7 @@ describe('toRouteFilters', () => {
 			table,
 			{ title: { source: 'queries', key: 'q', by: 'include' } },
 			empty,
-			'filter'
+			'filter',
 		);
 		expect(filter).toEqual([]);
 
@@ -77,7 +77,7 @@ describe('toRouteFilters', () => {
 			table,
 			{ id: { source: 'params', key: 'id', by: 'equal' } },
 			empty,
-			'where'
+			'where',
 		);
 		expect(where).toBeNull();
 	});

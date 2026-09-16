@@ -12,12 +12,12 @@
 	const queryRows = $derived(Object.entries(query));
 	let picked = $state<Tab | null>(null);
 	const tab = $derived(
-		picked ?? (paramRows.length === 0 && queryRows.length > 0 ? 'query' : 'params')
+		picked ?? (paramRows.length === 0 && queryRows.length > 0 ? 'query' : 'params'),
 	);
 
 	const rows = $derived(tab === 'params' ? paramRows : queryRows);
 	const empty = $derived(
-		tab === 'params' ? 'No path params on this request.' : 'No query on this request.'
+		tab === 'params' ? 'No path params on this request.' : 'No query on this request.',
 	);
 
 	function select(next: Tab) {
@@ -50,7 +50,12 @@
 			Query
 		</button>
 	</div>
-	<div role="tabpanel" id="param-panel" aria-labelledby="param-tab-{tab}" {...stylex.attrs(paramTabs.panel)}>
+	<div
+		role="tabpanel"
+		id="param-panel"
+		aria-labelledby="param-tab-{tab}"
+		{...stylex.attrs(paramTabs.panel)}
+	>
 		{#if rows.length === 0}
 			<p {...stylex.attrs(paramTabs.empty)}>{empty}</p>
 		{:else}

@@ -1,0 +1,62 @@
+name: publish
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: gate
+        name: Gate major and minor tags
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          if [[ ! "$TAG" =~ ^[0-9]+\.[0-9]+\.0$ ]]; then
+            echo "Skip: ${GITHUB_REF_NAME} is not a major/minor release (patch must be 0)"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          PKG="$(node -p "require('./package.json').version")"
+          if [[ "$PKG" != "$TAG" ]]; then
+            echo "package.json version ${PKG} does not match tag ${TAG}"
+            exit 1
+          fi
+
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "Tagged commit is not on origin/main"
+            exit 1
+          fi
+
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - if: steps.gate.outputs.skip != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - if: steps.gate.outputs.skip != 'true'
+        run: npm ci
+
+      - if: steps.gate.outputs.skip != 'true'
+        run: npm test
+
+      - if: steps.gate.outputs.skip != 'true'
+        run: npm run test:mock
+
+      - if: steps.gate.outputs.skip != 'true'
+        run: npm publish --access public --provenance

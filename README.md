@@ -208,3 +208,11 @@ npm run test:mock
 ```
 
 `npm test` is unit tests. `npm run test:mock` starts the CLI against `src/tests/` scenarios. A pre-commit hook runs `npm test`.
+
+Pull requests to `main` must pass the `test`, `lint`, and `coverage` GitHub checks.
+
+Publish a major or minor release by bumping `package.json` on a PR, merging, then tagging `vX.Y.0` on `main` (patch tags such as `v1.2.1` do not publish).
+
+## License
+
+Nipuu is licensed under the [MIT License](LICENSE).

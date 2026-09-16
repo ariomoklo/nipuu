@@ -8,7 +8,7 @@ import {
 	relationOptions,
 	resetTables,
 	resolveRelationLabels,
-	update
+	update,
 } from '$lib/server/table';
 import { destroy, flush } from '$lib/server/table/lifecycle';
 import { isRelationValue } from '$lib/server/table/row';
@@ -21,7 +21,7 @@ const exampleModel: ModelDefinition = {
 			.required()
 			.factory(({ index }) => `Todo ${index}`),
 		owner: t.id.uuid().required().rel('users', { field: 'id' }),
-		completed: t.boolean().default(false)
+		completed: t.boolean().default(false),
 	}),
 	users: (t) => ({
 		id: t.id.uuid(),
@@ -32,8 +32,8 @@ const exampleModel: ModelDefinition = {
 		email: t
 			.string()
 			.required()
-			.factory(({ index }) => `user.${index}@example.com`)
-	})
+			.factory(({ index }) => `user.${index}@example.com`),
+	}),
 };
 
 afterEach(() => {
@@ -74,11 +74,7 @@ describe('relation sync', () => {
 
 		for (const row of todos.rows) {
 			const rel = relationOf(row);
-			if (rel.index === 0) {
-				expect(rel.row.name.value).toBe('Only zero');
-			} else {
-				expect(rel.row.name.value).not.toBe('Only zero');
-			}
+			expect(rel.row.name.value === 'Only zero').toBe(rel.index === 0);
 		}
 	});
 
@@ -103,7 +99,7 @@ describe('relationOptions', () => {
 		const users = getTable('users')!;
 
 		expect(relationOptions(todos, getTables())).toEqual({
-			owner: users.rows.map((row) => ({ value: row.id.value, label: row.name.value }))
+			owner: users.rows.map((row) => ({ value: row.id.value, label: row.name.value })),
 		});
 	});
 
@@ -118,9 +114,9 @@ describe('relationOptions', () => {
 		createTables(
 			generateSchemas({
 				todos: (t) => ({ id: t.id.index(), owner: t.id.uuid().rel('users', { field: 'id' }) }),
-				users: (t) => ({ id: t.id.uuid() })
+				users: (t) => ({ id: t.id.uuid() }),
 			}),
-			2
+			2,
 		);
 
 		const options = relationOptions(getTable('todos')!, getTables());
@@ -133,8 +129,8 @@ describe('resolveRelationLabels', () => {
 	const options = {
 		owner: [
 			{ value: 'user-a', label: 'User 1' },
-			{ value: 'user-b', label: 'User 2' }
-		]
+			{ value: 'user-b', label: 'User 2' },
+		],
 	};
 
 	function resolve(owner: string): string | null {

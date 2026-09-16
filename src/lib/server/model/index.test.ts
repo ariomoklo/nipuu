@@ -9,7 +9,7 @@ const exampleModel: ModelDefinition = {
 			.required()
 			.factory(({ index }) => `Todo ${index}`),
 		owner: t.id.uuid().required().rel('users', { field: 'id' }),
-		completed: t.boolean().default(false)
+		completed: t.boolean().default(false),
 	}),
 	users: (t) => ({
 		id: t.id.uuid(),
@@ -20,8 +20,8 @@ const exampleModel: ModelDefinition = {
 		email: t
 			.string()
 			.required()
-			.factory(({ index }) => `user.${index}@example.com`)
-	})
+			.factory(({ index }) => `user.${index}@example.com`),
+	}),
 };
 
 function schemaField(table: Schema, name: string) {
@@ -43,7 +43,7 @@ describe('generateSchemas', () => {
 		expect(schemaField(todos, 'completed')).toMatchObject({
 			type: 'boolean',
 			hasDefault: true,
-			defaultValue: false
+			defaultValue: false,
 		});
 	});
 
@@ -55,9 +55,9 @@ describe('generateSchemas', () => {
 		expect(() =>
 			generateSchemas({
 				todos: () => ({
-					id: { required() {} } as never
-				})
-			})
+					id: { required() {} } as never,
+				}),
+			}),
 		).toThrow('MODEL.todos.id must be a field builder');
 	});
 });

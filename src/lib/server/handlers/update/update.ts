@@ -4,7 +4,7 @@ import { json, mapResponse, notFound, validationError } from '$lib/server/handle
 import {
 	resolveFieldValue,
 	toRouteFilters,
-	type DispatchContext
+	type DispatchContext,
 } from '$lib/server/handlers/sources/sources';
 import { lookup, toStore, update, type Table } from '$lib/server/table';
 import type { RouteHandlerObject } from '$lib/types';
@@ -13,7 +13,7 @@ function buildPatch(
 	table: Table,
 	handler: RouteHandlerObject,
 	context: DispatchContext,
-	current: Payload
+	current: Payload,
 ): Payload {
 	const spec = handler.update;
 	if (spec == null || typeof spec !== 'object' || Array.isArray(spec)) return {};

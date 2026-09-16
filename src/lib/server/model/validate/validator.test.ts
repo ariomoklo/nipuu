@@ -9,13 +9,16 @@ function conf(type: FieldKind, extra: Partial<FieldSchema> = {}): FieldSchema {
 		required: false,
 		hasDefault: false,
 		defaultValue: undefined,
-		...extra
+		...extra,
 	};
 }
 
 describe('validator.string', () => {
 	it('accepts a string and rejects other types', () => {
-		expect(validator.string('ok', conf('string'))).toEqual({ ok: true, message: 'Must be a string' });
+		expect(validator.string('ok', conf('string'))).toEqual({
+			ok: true,
+			message: 'Must be a string',
+		});
 		expect(validator.string(1, conf('string')).ok).toBe(false);
 	});
 });
@@ -55,10 +58,10 @@ describe('validator.id.index', () => {
 describe('validator.id.uuid', () => {
 	it('accepts an RFC 4122 UUID and rejects a nil UUID', () => {
 		expect(validator['id.uuid']('00000000-0000-4000-8000-000000000000', conf('id.uuid')).ok).toBe(
-			true
+			true,
 		);
 		expect(validator['id.uuid']('00000000-0000-0000-0000-000000000000', conf('id.uuid')).ok).toBe(
-			false
+			false,
 		);
 		expect(validator['id.uuid'](1, conf('id.uuid')).ok).toBe(false);
 	});

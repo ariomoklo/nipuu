@@ -11,14 +11,14 @@ const model: ModelDefinition = {
 			.string()
 			.required()
 			.factory(({ index }) => `Todo ${index}`),
-		completed: t.boolean().default(false)
-	})
+		completed: t.boolean().default(false),
+	}),
 };
 
 const findHandler: RouteHandler = {
 	action: 'find',
 	model: 'todos',
-	where: { id: { source: 'params', key: 'id', by: 'equal' } }
+	where: { id: { source: 'params', key: 'id', by: 'equal' } },
 };
 
 beforeEach(() => {

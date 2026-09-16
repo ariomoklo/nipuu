@@ -40,7 +40,7 @@ export function cellTitle(row: Record<string, unknown>, field: TableFieldMeta): 
 /** Identity values of a row, for labels and edit links. */
 export function rowIdentity(
 	row: Record<string, unknown>,
-	fields: TableFieldMeta[]
+	fields: TableFieldMeta[],
 ): Record<string, string> {
 	const identity: Record<string, string> = {};
 	for (const field of fields) {

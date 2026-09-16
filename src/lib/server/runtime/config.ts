@@ -13,7 +13,9 @@ export async function loadConfig(): Promise<ConfigDefinition> {
 		throw new Error('config is not set. Start mock server with: nipuu <config-file>');
 	}
 
-	const imported = (await import(/* @vite-ignore */ pathToFileURL(configPath).href)) as Partial<ConfigDefinition>;
+	const imported = (await import(
+		/* @vite-ignore */ pathToFileURL(configPath).href
+	)) as Partial<ConfigDefinition>;
 	if (!imported.MODEL || !imported.ROUTE) {
 		throw new Error(`Config must export MODEL and ROUTE: ${configPath}`);
 	}

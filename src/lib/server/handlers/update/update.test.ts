@@ -11,8 +11,8 @@ const model: ModelDefinition = {
 			.string()
 			.required()
 			.factory(({ index }) => `Todo ${index}`),
-		completed: t.boolean().default(false)
-	})
+		completed: t.boolean().default(false),
+	}),
 };
 
 const updateHandler: RouteHandler = {
@@ -21,8 +21,8 @@ const updateHandler: RouteHandler = {
 	where: { id: { source: 'params', key: 'id' } },
 	update: {
 		title: { source: 'body', key: 'title' },
-		completed: { source: 'body', key: 'completed' }
-	}
+		completed: { source: 'body', key: 'completed' },
+	},
 };
 
 const toggleHandler: RouteHandler = {
@@ -30,8 +30,8 @@ const toggleHandler: RouteHandler = {
 	model: 'todos',
 	where: { id: { source: 'params', key: 'id', by: 'equal' } },
 	update: {
-		completed: (todo: Record<string, unknown>) => !todo.completed
-	}
+		completed: (todo: Record<string, unknown>) => !todo.completed,
+	},
 };
 
 beforeEach(() => {
@@ -47,7 +47,7 @@ describe('updateAction', () => {
 		const res = dispatch(updateHandler, {
 			params: { id: '1' },
 			queries: {},
-			body: { title: 'Renamed', completed: true }
+			body: { title: 'Renamed', completed: true },
 		});
 		expect(res.status).toBe(200);
 		expect(await res.json()).toEqual({ id: 1, title: 'Renamed', completed: true });
@@ -63,7 +63,7 @@ describe('updateAction', () => {
 		const res = dispatch(updateHandler, {
 			params: { id: '9' },
 			queries: {},
-			body: { title: 'Nope' }
+			body: { title: 'Nope' },
 		});
 		expect(res.status).toBe(404);
 	});
@@ -72,7 +72,7 @@ describe('updateAction', () => {
 		const res = dispatch(updateHandler, {
 			params: { id: '1' },
 			queries: {},
-			body: { completed: 'yes' }
+			body: { completed: 'yes' },
 		});
 		expect(res.status).toBe(400);
 		expect((await res.json()).error).toBe('Validation failed');

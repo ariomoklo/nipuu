@@ -11,7 +11,7 @@ const model: ModelDefinition = {
 			.required()
 			.factory(({ index }) => `Todo ${index}`),
 		owner: t.id.uuid().required().rel('users', { field: 'id' }),
-		completed: t.boolean().default(false)
+		completed: t.boolean().default(false),
 	}),
 	users: (t) => ({
 		id: t.id.uuid(),
@@ -22,8 +22,8 @@ const model: ModelDefinition = {
 		email: t
 			.string()
 			.required()
-			.factory(({ index }) => `user.${index}@example.com`)
-	})
+			.factory(({ index }) => `user.${index}@example.com`),
+	}),
 };
 
 const searchHandler = {
@@ -31,18 +31,18 @@ const searchHandler = {
 	model: 'todos',
 	filter: {
 		title: { source: 'queries', key: 'q', by: 'include' },
-		completed: { source: 'queries', key: 'completed', by: 'equal' }
+		completed: { source: 'queries', key: 'completed', by: 'equal' },
 	},
 	sort: {
 		sortBy: { source: 'queries', key: 'sortBy' },
-		orderBy: { source: 'queries', key: 'orderBy' }
+		orderBy: { source: 'queries', key: 'orderBy' },
 	},
 	pagination: {
 		type: 'cursor',
 		start: { source: 'queries', key: 'from' },
 		end: { source: 'queries', key: 'to' },
-		limit: { source: 'queries', key: 'limit' }
-	}
+		limit: { source: 'queries', key: 'limit' },
+	},
 } as const;
 
 beforeEach(() => {
@@ -57,7 +57,7 @@ describe('searchAction', () => {
 	it('returns projected rows with scalar relation ids', async () => {
 		const res = dispatch(
 			{ action: 'search', model: 'todos' },
-			{ params: {}, queries: {}, body: null }
+			{ params: {}, queries: {}, body: null },
 		);
 		expect(res.status).toBe(200);
 		const body = await res.json();
@@ -66,7 +66,7 @@ describe('searchAction', () => {
 			id: 1,
 			title: 'Todo 1',
 			owner: expect.any(String),
-			completed: false
+			completed: false,
 		});
 	});
 
@@ -74,25 +74,25 @@ describe('searchAction', () => {
 		const filtered = dispatch(searchHandler, {
 			params: {},
 			queries: { q: 'Todo 1' },
-			body: null
+			body: null,
 		});
 		expect(await filtered.json()).toEqual([expect.objectContaining({ id: 1, title: 'Todo 1' })]);
 
 		const sorted = dispatch(searchHandler, {
 			params: {},
 			queries: { sortBy: 'title', orderBy: 'desc' },
-			body: null
+			body: null,
 		});
 		expect((await sorted.json()).map((row: { title: string }) => row.title)).toEqual([
 			'Todo 3',
 			'Todo 2',
-			'Todo 1'
+			'Todo 1',
 		]);
 
 		const page = dispatch(searchHandler, {
 			params: {},
 			queries: { from: '1', to: '3', limit: '1' },
-			body: null
+			body: null,
 		});
 		expect(await page.json()).toEqual([expect.objectContaining({ id: 2, title: 'Todo 2' })]);
 	});
@@ -104,26 +104,26 @@ describe('searchAction', () => {
 				model: 'todos',
 				response: ({
 					data,
-					model: store
+					model: store,
 				}: {
 					data: { owner: string }[];
 					model: Record<string, { id: string }[]>;
 				}) => ({
 					todos: data.map((todo: { owner: string }) =>
-						store.users.find((user: { id: string }) => todo.owner === user.id)
+						store.users.find((user: { id: string }) => todo.owner === user.id),
 					),
-					total: data.length
-				})
+					total: data.length,
+				}),
 			},
-			{ params: {}, queries: {}, body: null }
+			{ params: {}, queries: {}, body: null },
 		);
 		const body = await res.json();
 		expect(body.total).toBe(3);
 		expect(body.todos[0]).toEqual(
 			expect.objectContaining({
 				id: expect.any(String),
-				name: expect.stringMatching(/^User /)
-			})
+				name: expect.stringMatching(/^User /),
+			}),
 		);
 	});
 
@@ -133,9 +133,9 @@ describe('searchAction', () => {
 			{
 				action: 'search',
 				model: 'todos',
-				where: { owner: { source: 'params', key: 'id', by: 'equal' } }
+				where: { owner: { source: 'params', key: 'id', by: 'equal' } },
 			},
-			{ params: { id: owner }, queries: {}, body: null }
+			{ params: { id: owner }, queries: {}, body: null },
 		);
 		const body = await res.json();
 		expect(body.every((todo: { owner: string }) => todo.owner === owner)).toBe(true);
@@ -144,7 +144,7 @@ describe('searchAction', () => {
 	it('returns 400 for an unknown table', async () => {
 		const res = dispatch(
 			{ action: 'search', model: 'missing' },
-			{ params: {}, queries: {}, body: null }
+			{ params: {}, queries: {}, body: null },
 		);
 		expect(res.status).toBe(400);
 		expect(await res.json()).toEqual({ error: 'Unknown table' });
@@ -153,7 +153,7 @@ describe('searchAction', () => {
 	it('returns 500 when response is present but not a function', async () => {
 		const res = dispatch(
 			{ action: 'search', model: 'todos', response: { bad: true } },
-			{ params: {}, queries: {}, body: null }
+			{ params: {}, queries: {}, body: null },
 		);
 		expect(res.status).toBe(500);
 		expect(await res.json()).toEqual({ error: 'Invalid response' });
