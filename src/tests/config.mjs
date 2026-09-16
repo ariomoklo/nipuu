@@ -28,6 +28,33 @@ export const ROUTE = {
 			response: 'Hello!',
 		},
 	},
+	'/slow': {
+		GET: {
+			action: 'static',
+			response: 'slow',
+			delay: 1500,
+		},
+		POST: {
+			action: 'static',
+			response: 'slow',
+			delay: 1500,
+		},
+		PUT: {
+			action: 'static',
+			response: 'slow',
+			delay: 1500,
+		},
+		PATCH: {
+			action: 'static',
+			response: 'slow',
+			delay: 1500,
+		},
+		DELETE: {
+			action: 'static',
+			response: 'slow',
+			delay: 1500,
+		},
+	},
 	'/users': {
 		GET: {
 			action: 'search',
