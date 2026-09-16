@@ -9,4 +9,6 @@ declare global {
 	}
 }
 
+declare module 'virtual:stylex:runtime';
+
 export {};

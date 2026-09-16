@@ -1,7 +1,15 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { generateSchemas, type ModelDefinition } from '$lib/server/model';
 import type { RelationValue, Row } from '$lib/server/model/types';
-import { createTables, getTable, resetTables, update } from '$lib/server/table';
+import {
+	createTables,
+	getTable,
+	getTables,
+	relationOptions,
+	resetTables,
+	resolveRelationLabels,
+	update
+} from '$lib/server/table';
 import { destroy, flush } from '$lib/server/table/lifecycle';
 import { isRelationValue } from '$lib/server/table/row';
 
@@ -85,5 +93,65 @@ describe('relation sync', () => {
 		expect(() => update(users, { id: sourceId }, { name: 'After destroy' })).not.toThrow();
 		await flush(users);
 		expect(todos.rows).toEqual([]);
+	});
+});
+
+describe('relationOptions', () => {
+	it('lists the joined value with the first string field as label', () => {
+		createTables(generateSchemas(exampleModel), 2);
+		const todos = getTable('todos')!;
+		const users = getTable('users')!;
+
+		expect(relationOptions(todos, getTables())).toEqual({
+			owner: users.rows.map((row) => ({ value: row.id.value, label: row.name.value }))
+		});
+	});
+
+	it('skips fields without a relation', () => {
+		createTables(generateSchemas(exampleModel), 2);
+		const users = getTable('users')!;
+
+		expect(relationOptions(users, getTables())).toEqual({});
+	});
+
+	it('leaves the label off when the related table has no plain string field', () => {
+		createTables(
+			generateSchemas({
+				todos: (t) => ({ id: t.id.index(), owner: t.id.uuid().rel('users', { field: 'id' }) }),
+				users: (t) => ({ id: t.id.uuid() })
+			}),
+			2
+		);
+
+		const options = relationOptions(getTable('todos')!, getTables());
+		expect(options.owner).toHaveLength(2);
+		expect(options.owner.every((option) => option.label === undefined)).toBe(true);
+	});
+});
+
+describe('resolveRelationLabels', () => {
+	const options = {
+		owner: [
+			{ value: 'user-a', label: 'User 1' },
+			{ value: 'user-b', label: 'User 2' }
+		]
+	};
+
+	function resolve(owner: string): string | null {
+		const form = new FormData();
+		form.set('owner', owner);
+		resolveRelationLabels(form, options);
+		return form.get('owner') as string | null;
+	}
+
+	it('swaps a label for the value it stands for, ignoring case', () => {
+		expect(resolve('User 2')).toBe('user-b');
+		expect(resolve('user 2')).toBe('user-b');
+	});
+
+	it('leaves values and unknown text alone', () => {
+		expect(resolve('user-a')).toBe('user-a');
+		expect(resolve('User 9')).toBe('User 9');
+		expect(resolve('')).toBe('');
 	});
 });

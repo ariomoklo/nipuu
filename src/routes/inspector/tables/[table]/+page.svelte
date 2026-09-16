@@ -1,43 +1,57 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { INSPECTOR_URL } from '$lib/inspector';
-	import type { TableFieldMeta } from '$lib/types/table';
+	import Button from '$lib/ui/button/button.svelte';
+	import Icon from '$lib/ui/icon/icon.svelte';
+	import FieldControl from '$lib/ui/input/field-control/field-control.svelte';
+	import Input from '$lib/ui/input/input/input.svelte';
+	import Select from '$lib/ui/input/select/select.svelte';
+	import Label from '$lib/ui/label/label.svelte';
+	import { iconButton } from '$lib/ui/shared/icon-button.style';
+	import { cellText, cellTitle, fieldValue, rowIdentity } from '$lib/ui/shared/row/value';
+	import { browser } from '$lib/ui/shared/shell/browser.style';
+	import { chrome } from '$lib/ui/shared/shell/chrome.style';
+	import { editor } from '$lib/ui/shared/shell/editor.style';
+	import { sheet as sheetStyles } from '$lib/ui/shared/sheet.style';
+	import { textLink } from '$lib/ui/shared/text-link.style';
+	import { table as tableStyles } from '$lib/ui/table/table.style';
+	import Table from '$lib/ui/table/table.svelte';
+	import * as stylex from '@stylexjs/stylex';
+	import { untrack } from 'svelte';
 	import type { PageProps } from './$types';
+
+	const SEARCH_DELAY = 250;
 
 	let { data, form }: PageProps = $props();
 
+	// Draft term: search navigations are replaced, so the field owns the value.
+	let search = $state(untrack(() => data.q));
+	let sheet: HTMLDialogElement;
+	let trigger: HTMLButtonElement;
+	let timer: ReturnType<typeof setTimeout> | undefined;
+
 	const pageCount = $derived(Math.max(1, Math.ceil(data.total / data.limit)));
+	const identityFields = $derived(data.fields.filter((field) => field.identity));
+	const activeFilters = $derived(Object.keys(data.values).length);
 
-	function cellText(value: unknown): string {
-		if (value == null) return '';
-		if (typeof value === 'object') return JSON.stringify(value);
-		return String(value);
-	}
-
-	function fieldValue(row: Record<string, unknown>, field: TableFieldMeta): string {
-		const cell = row[field.name];
-		if (field.rel && cell !== null && typeof cell === 'object') {
-			const related = (cell as Record<string, unknown>)[field.rel.field];
-			if (typeof related === 'boolean') return related ? 'true' : 'false';
-			if (related == null) return '';
-			return String(related);
-		}
-
-		if (typeof cell === 'boolean') return cell ? 'true' : 'false';
-		if (cell == null) return '';
-		return String(cell);
-	}
+	$effect(() => () => clearTimeout(timer));
 
 	function rowKey(row: Record<string, unknown>): string {
-		const identity = data.fields.filter((field) => field.identity);
-		if (identity.length === 0) return JSON.stringify(row);
-		return identity.map((field) => fieldValue(row, field)).join('|');
+		if (identityFields.length === 0) return JSON.stringify(row);
+		return identityFields.map((field) => fieldValue(row, field)).join('|');
 	}
 
-	function pageHref(page: number): string {
+	function editHref(row: Record<string, unknown>): string {
+		const params = new URLSearchParams(rowIdentity(row, data.fields));
+		return `${INSPECTOR_URL}/tables/${data.name}/edit?${params}`;
+	}
+
+	/** Current filters and page size, so search and pagination keep them. */
+	function tableHref(term: string, page = 1): string {
 		const params = new URLSearchParams();
-		params.set('q', data.q);
+		if (term) params.set('q', term);
 		params.set('limit', String(data.limit));
-		params.set('page', String(page));
+		if (page > 1) params.set('page', String(page));
 		for (const [key, value] of Object.entries(data.values)) {
 			params.set(key, value);
 		}
@@ -48,165 +62,217 @@
 
 		return `${INSPECTOR_URL}/tables/${data.name}?${params}`;
 	}
+
+	function onSearch(event: Event & { currentTarget: HTMLInputElement }) {
+		search = event.currentTarget.value;
+		clearTimeout(timer);
+		timer = setTimeout(() => {
+			void goto(tableHref(search), { keepFocus: true, noScroll: true, replaceState: true });
+		}, SEARCH_DELAY);
+	}
+
+	/** Submit the sheet without the empty fields a native GET would carry. */
+	function onFilter(event: SubmitEvent & { currentTarget: HTMLFormElement }) {
+		event.preventDefault();
+		clearTimeout(timer);
+
+		const fields = new FormData(event.currentTarget);
+		const params = new URLSearchParams();
+		for (const [key, value] of fields) {
+			if (typeof value !== 'string' || value === '') continue;
+			if (key.endsWith('.by') && !fields.get(key.slice(0, -'.by'.length))) continue;
+			params.set(key, value);
+		}
+
+		sheet.close();
+		void goto(`${INSPECTOR_URL}/tables/${data.name}?${params}`, { noScroll: true });
+	}
 </script>
 
 <svelte:head>
 	<title>{data.name}</title>
 </svelte:head>
 
-<h1>{data.name}</h1>
-
-<p>
-	<a href={INSPECTOR_URL}>Inspector</a>
-	<a href="{INSPECTOR_URL}/tables">Tables</a>
+<h1 {...stylex.attrs(chrome.title)}>{data.name}</h1>
+<span {...stylex.attrs(chrome.titleMark)} aria-hidden="true"></span>
+<p {...stylex.attrs(chrome.detailMeta)}>
+	{data.total} {data.total === 1 ? 'row' : 'rows'} ・ {data.fields.length} properties ・ Page {data.page}
+	of {pageCount}
 </p>
 
 {#if form?.errors && form.errors.length > 0}
-	<ul>
+	<ul {...stylex.attrs(editor.errorList)}>
 		{#each form.errors as error (error)}
 			<li>{error}</li>
 		{/each}
 	</ul>
 {/if}
 
-<form method="GET">
-	<p>
-		<label>
-			Query
-			<input name="q" value={data.q} />
-		</label>
-	</p>
-	<input type="hidden" name="limit" value={String(data.limit)} />
-	{#each data.fields as field (field.name)}
-		<p>
-			<label>
-				{field.name}
-				<select name={`${field.name}.by`} value={data.operators[field.name] ?? 'eq'}>
-					{#each field.operators as operator (operator)}
-						<option value={operator}>{operator}</option>
-					{/each}
-				</select>
-			</label>
-			{#if field.type === 'boolean'}
-				<select name={field.name} value={data.values[field.name] ?? ''}>
-					<option value="">(any)</option>
-					<option value="true">true</option>
-					<option value="false">false</option>
-				</select>
-			{:else if field.type === 'enum'}
-				<select name={field.name} value={data.values[field.name] ?? ''}>
-					<option value=""></option>
-					{#each field.enum ?? [] as option (option)}
-						<option value={option}>{option}</option>
-					{/each}
-				</select>
-			{:else if field.type === 'number' || field.type === 'id.index'}
-				<input type="number" name={field.name} value={data.values[field.name] ?? ''} />
-			{:else}
-				<input type="text" name={field.name} value={data.values[field.name] ?? ''} />
-			{/if}
-		</p>
-	{/each}
-	<button type="submit">Apply</button>
-</form>
+<div {...stylex.attrs(browser.toolbar)}>
+	<form method="GET" onsubmit={() => clearTimeout(timer)} {...stylex.attrs(browser.searchForm)}>
+		<Input
+			name="q"
+			value={search}
+			oninput={onSearch}
+			placeholder="Search rows"
+			aria-label="Search rows"
+		/>
+		{#each Object.entries(data.values) as [key, value] (key)}
+			<input type="hidden" name={key} {value} />
+		{/each}
+		{#each Object.entries(data.operators) as [key, value] (key)}
+			<input type="hidden" name="{key}.by" {value} />
+		{/each}
+		<input type="hidden" name="limit" value={String(data.limit)} />
+	</form>
+	<button
+		type="button"
+		bind:this={trigger}
+		onclick={() => sheet.showModal()}
+		aria-haspopup="dialog"
+		aria-label={activeFilters > 0 ? `Filter, ${activeFilters} active` : 'Filter'}
+		title="Filter"
+		{...stylex.attrs(iconButton.base, activeFilters > 0 && iconButton.active)}
+	>
+		<Icon name="funnel" size={18} />
+	</button>
+</div>
 
-<p>
-	{#if data.page > 1}
-		<a href={pageHref(data.page - 1)}>Previous</a>
-	{/if}
-	Page {data.page} of {pageCount} ({data.total} rows)
-	{#if data.page * data.limit < data.total}
-		<a href={pageHref(data.page + 1)}>Next</a>
-	{/if}
-</p>
-
-<table>
-	<thead>
-		<tr>
-			{#each data.fields as field (field.name)}
-				<th>{field.name}</th>
-			{/each}
-			<th>Actions</th>
-		</tr>
-	</thead>
-	<tbody>
-		{#each data.rows as row (rowKey(row))}
+<div {...stylex.attrs(chrome.section)}>
+	<Table>
+		<thead>
 			<tr>
 				{#each data.fields as field (field.name)}
-					<td>{cellText(row[field.name])}</td>
+					<th {...stylex.attrs(tableStyles.th)}>{field.name}</th>
 				{/each}
-				<td>
-					<form method="POST" action="?/update">
-						{#each data.fields as field (field.name)}
-							{#if field.identity}
-								<input type="hidden" name={field.name} value={fieldValue(row, field)} />
-							{/if}
-						{/each}
-						{#each data.fields as field (field.name)}
-							{#if !field.autoId}
-								<label>
-									{field.name}
-									{#if field.type === 'boolean'}
-										<select name={field.name} value={fieldValue(row, field)}>
-											<option value="true">true</option>
-											<option value="false">false</option>
-										</select>
-									{:else if field.type === 'enum'}
-										<select name={field.name} value={fieldValue(row, field)}>
-											{#each field.enum ?? [] as option (option)}
-												<option value={option}>{option}</option>
-											{/each}
-										</select>
-									{:else if field.type === 'number' || field.type === 'id.index'}
-										<input type="number" name={field.name} value={fieldValue(row, field)} />
-									{:else}
-										<input type="text" name={field.name} value={fieldValue(row, field)} />
-									{/if}
-								</label>
-							{/if}
-						{/each}
-						<button type="submit">Save</button>
-					</form>
-					<form method="POST" action="?/delete">
-						{#each data.fields as field (field.name)}
-							{#if field.identity}
-								<input type="hidden" name={field.name} value={fieldValue(row, field)} />
-							{/if}
-						{/each}
-						<button type="submit">Delete</button>
-					</form>
+				<th {...stylex.attrs(tableStyles.th, browser.cellActions)}>Actions</th>
+			</tr>
+		</thead>
+		<tbody>
+			{#each data.rows as row (rowKey(row))}
+				{@const label = identityFields.map((field) => fieldValue(row, field)).join(' ')}
+				<tr>
+					{#each data.fields as field (field.name)}
+						{@const text = cellText(row, field)}
+						<td
+							{...stylex.attrs(
+								tableStyles.td,
+								field.identity && browser.cellStrong,
+								text === '—' && browser.cellEmpty
+							)}
+						>
+							<span {...stylex.attrs(browser.cellText)} title={cellTitle(row, field)}>{text}</span>
+						</td>
+					{/each}
+					<td {...stylex.attrs(tableStyles.td, browser.cellActions)}>
+						<div {...stylex.attrs(browser.rowActions)}>
+							<a
+								href={editHref(row)}
+								title="Edit"
+								aria-label={`Edit ${label}`}
+								{...stylex.attrs(iconButton.base)}
+							>
+								<Icon name="pencil" />
+							</a>
+							<form method="POST" action="?/delete">
+								{#each identityFields as field (field.name)}
+									<input type="hidden" name={field.name} value={fieldValue(row, field)} />
+								{/each}
+								<button
+									type="submit"
+									title="Delete"
+									aria-label={`Delete ${label}`}
+									{...stylex.attrs(iconButton.base, iconButton.danger)}
+								>
+									<Icon name="trash" />
+								</button>
+							</form>
+						</div>
+					</td>
+				</tr>
+			{:else}
+				<tr>
+					<td colspan={data.fields.length + 1} {...stylex.attrs(tableStyles.td, browser.cellEmpty)}>
+						No rows match this filter. Widen the filter or add a row.
+					</td>
+				</tr>
+			{/each}
+		</tbody>
+		<tfoot>
+			<tr>
+				<td colspan={data.fields.length + 1} {...stylex.attrs(tableStyles.td, browser.newRowCell)}>
+					<a href="{INSPECTOR_URL}/tables/{data.name}/new" {...stylex.attrs(browser.newRow)}>
+						<Icon name="plus" />
+						New row
+					</a>
 				</td>
 			</tr>
-		{/each}
-	</tbody>
-</table>
+		</tfoot>
+	</Table>
+</div>
 
-<form method="POST" action="?/create">
-	{#each data.fields as field (field.name)}
-		{#if !field.autoId}
-			<p>
-				<label>
-					{field.name}
-					{#if field.type === 'boolean'}
-						<select name={field.name} value="">
-							<option value="">(default)</option>
-							<option value="true">true</option>
-							<option value="false">false</option>
-						</select>
-					{:else if field.type === 'enum'}
-						<select name={field.name}>
-							{#each field.enum ?? [] as option (option)}
-								<option value={option}>{option}</option>
-							{/each}
-						</select>
-					{:else if field.type === 'number' || field.type === 'id.index'}
-						<input type="number" name={field.name} />
-					{:else}
-						<input type="text" name={field.name} />
-					{/if}
-				</label>
-			</p>
+{#if pageCount > 1}
+	<nav aria-label="Pagination" {...stylex.attrs(browser.pager)}>
+		{#if data.page > 1}
+			<a href={tableHref(search, data.page - 1)} {...stylex.attrs(textLink.root)}>Previous</a>
 		{/if}
-	{/each}
-	<button type="submit">Create</button>
-</form>
+		{#if data.page * data.limit < data.total}
+			<a href={tableHref(search, data.page + 1)} {...stylex.attrs(textLink.root)}>Next</a>
+		{/if}
+	</nav>
+{/if}
+
+<dialog
+	bind:this={sheet}
+	onclose={() => trigger.focus()}
+	onclick={(event) => {
+		if (event.target === sheet) sheet.close();
+	}}
+	{...stylex.attrs(sheetStyles.root)}
+>
+	<form method="GET" onsubmit={onFilter} {...stylex.attrs(sheetStyles.form)}>
+		<div {...stylex.attrs(sheetStyles.header)}>
+			<h2 {...stylex.attrs(sheetStyles.title)}>Filter</h2>
+			<button
+				type="button"
+				onclick={() => sheet.close()}
+				aria-label="Close filter"
+				title="Close"
+				{...stylex.attrs(iconButton.base)}
+			>
+				<Icon name="close" size={18} />
+			</button>
+		</div>
+		<div {...stylex.attrs(sheetStyles.body)}>
+			<div {...stylex.attrs(browser.filterGrid)}>
+				{#each data.fields as field (field.name)}
+					<Label>
+						{field.name}
+						<div {...stylex.attrs(browser.filterPair)}>
+							<Select
+								name={`${field.name}.by`}
+								value={data.operators[field.name] ?? 'eq'}
+								aria-label={`${field.name} comparison`}
+							>
+								{#each field.operators as operator (operator)}
+									<option value={operator}>{operator}</option>
+								{/each}
+							</Select>
+							<FieldControl
+								{field}
+								value={data.values[field.name] ?? ''}
+								blank={field.type === 'boolean' ? '(any)' : ''}
+								options={data.relations[field.name]}
+							/>
+						</div>
+					</Label>
+				{/each}
+			</div>
+		</div>
+		<div {...stylex.attrs(sheetStyles.footer)}>
+			<input type="hidden" name="q" value={search} />
+			<input type="hidden" name="limit" value={String(data.limit)} />
+			<Button type="submit">Apply</Button>
+		</div>
+	</form>
+</dialog>

@@ -73,6 +73,7 @@ export {
 } from '$lib/server/table/store/store';
 export type { Table } from '$lib/server/table/lifecycle';
 export { filterValue } from '$lib/server/table/row';
+export { relationOptions, resolveRelationLabels } from '$lib/server/table/relations/relations';
 export { query } from '$lib/server/table/query/query';
 export { destroy, flush } from '$lib/server/table/lifecycle';
 export { sortByForeignKey as sortTablesByFk } from '$lib/server/table/order/order';

@@ -24,3 +24,7 @@ export function appendLog(entry: LogEntry): void {
 export function listLogs(): LogEntry[] {
 	return entries().slice();
 }
+
+export function getLog(id: string): LogEntry | undefined {
+	return entries().find((entry) => entry.id === id);
+}

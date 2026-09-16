@@ -12,6 +12,11 @@ export type TableFieldMeta = {
 	identity: boolean;
 };
 
+export type TableRelationOption = {
+	value: string;
+	label?: string;
+};
+
 export type TableQueryPage = {
 	rows: Record<string, unknown>[];
 	total: number;

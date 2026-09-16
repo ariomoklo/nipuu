@@ -1,0 +1,68 @@
+import * as stylex from '@stylexjs/stylex';
+import { colors, space, typography } from '$lib/ui/shared/tokens.stylex';
+
+export const sheet = stylex.create({
+	root: {
+		position: 'fixed',
+		insetBlock: 0,
+		insetInlineEnd: 0,
+		insetInlineStart: 'auto',
+		margin: 0,
+		padding: 0,
+		width: 'min(26rem, 100vw)',
+		maxWidth: '100vw',
+		height: '100dvh',
+		maxHeight: '100dvh',
+		backgroundColor: colors.background,
+		color: colors.foreground,
+		borderWidth: 0,
+		borderInlineStartWidth: 1,
+		borderInlineStartStyle: 'solid',
+		borderInlineStartColor: colors.border,
+		'::backdrop': {
+			backgroundColor: colors.overlay
+		}
+	},
+	form: {
+		display: 'flex',
+		flexDirection: 'column',
+		height: '100%'
+	},
+	header: {
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+		gap: space.md,
+		paddingInline: space.lg,
+		paddingBlock: space.md,
+		borderBottomWidth: 1,
+		borderBottomStyle: 'solid',
+		borderBottomColor: colors.border
+	},
+	title: {
+		margin: 0,
+		fontFamily: typography.fontBody,
+		fontSize: typography.sizeLabel,
+		fontWeight: typography.weightStrong,
+		textTransform: 'uppercase',
+		letterSpacing: '0.08em',
+		color: colors.mutedForeground
+	},
+	body: {
+		flex: 1,
+		overflowY: 'auto',
+		paddingInline: space.lg,
+		paddingBlock: space.lg
+	},
+	footer: {
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'flex-end',
+		gap: space.md,
+		paddingInline: space.lg,
+		paddingBlock: space.md,
+		borderTopWidth: 1,
+		borderTopStyle: 'solid',
+		borderTopColor: colors.border
+	}
+});

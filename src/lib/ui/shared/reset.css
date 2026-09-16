@@ -1,0 +1,47 @@
+@layer reset {
+	*,
+	*::before,
+	*::after {
+		box-sizing: border-box;
+	}
+
+	html,
+	body {
+		margin: 0;
+		min-height: 100%;
+		background: #f7fafc;
+		color: #0b1220;
+		font-family: 'Source Sans 3', ui-sans-serif, sans-serif;
+		font-size: 16px;
+		line-height: 1.5;
+		-webkit-font-smoothing: antialiased;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		html,
+		body {
+			background: #0b1220;
+			color: #f8fafc;
+		}
+	}
+
+	button,
+	input,
+	select,
+	textarea {
+		font: inherit;
+	}
+
+	pre {
+		margin: 0;
+		font-family: inherit;
+	}
+
+	table {
+		border-collapse: collapse;
+	}
+
+	a {
+		text-decoration: none;
+	}
+}

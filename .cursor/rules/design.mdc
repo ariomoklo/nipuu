@@ -1,0 +1,13 @@
+---
+description: Follow docs/DESIGN.md for inspector UI, StyleX, and the design system
+alwaysApply: true
+---
+
+Read `docs/DESIGN.md` before changing inspector UI, `$lib/ui`, StyleX, tokens, or visual copy. Follow it exactly.
+
+- Tokens and type come from `$lib/ui/shared/tokens.stylex.ts`. Do not invent colors or fonts.
+- Apply styles with `stylex.attrs`. Never `stylex.props`. No Svelte `<style>` on inspector UI.
+- `stylex.create` stays at module top level in `.ts` files. Tokens use `stylex.defineVars` in `*.stylex.ts` only.
+- Reuse `$lib/ui` components. Import explicit files with `$lib/...` aliases. Input-kind components live under `$lib/ui/input/`.
+- Icons are Heroicons outline only, added as paths to `$lib/ui/icon/icon.svelte`. Never emoji, never another icon set or icon package, and never an icon where a word is clearer.
+- Sky marks nav, JSON keys, param and query keys, 2xx status, request-row hover/focus, an active filter funnel, and the title bar only. 4xx/5xx status uses danger. Type and whitespace do the rest.

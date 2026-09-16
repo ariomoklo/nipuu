@@ -43,6 +43,7 @@ Process-lifetime state (config, compiled schemas, tables, logs, field-schema reg
 - Singular untested files stay in the parent folder (`table/row.ts`). Do not wrap them as `table/row/row.ts`.
 - A use case with a test file or multiple implementation files lives in a subdirectory (`table/filter/filter.ts`, `table/query/query.ts` + `parse.ts`).
 - Module `index.ts` / `index.test.ts` stay at the module root and are the public barrel.
+- Inspector UI uses component folders and `$lib/ui/shared/`; input-kind components live under `$lib/ui/input/`. Server barrels do not apply to `$lib/ui`.
 - Unexported local functions sit at the top of a file; exported functions, objects, and variables sit at the bottom.
 
 | Module | Role |
@@ -54,7 +55,7 @@ Process-lifetime state (config, compiled schemas, tables, logs, field-schema reg
 | `table/` | In-memory `Table` map, seed, relation snapshots, `find` / `select` / `query` / `insert` / `update` / `deleteRow`. |
 | `router/` | Parse `/todos/:id` patterns, match method + path, extract params. No SvelteKit imports. |
 | `handlers/` | Dispatch `static` / `search` / `find` / `upsert` / `update` / `delete`. Validation runs inside mutating actions. |
-| `logs.ts` | In-memory ring buffer: `appendLog` / `listLogs`. |
+| `logs.ts` | In-memory ring buffer: `appendLog` / `listLogs` / `getLog`. |
 | `http/` | CORS, control-plane predicate, data-plane handle. |
 
 Shared DTOs the inspector may import live in `src/lib/types/` (for example `LogEntry`). No store, no `fs`, no env reads there.
@@ -93,15 +94,22 @@ This package is shaped for `npx`:
 - After publish: `npx nipuu ./mocks/index.mjs`
 - In this repo: `npx . ./example/index.mjs`
 
-`package.json` sets `"bin": { "nipuu": "./src/cli.js" }` and `"type": "module"`. Vite, Svelte, and `@sveltejs/kit` are in **dependencies** (npx installs those only). This SvelteKit template keeps Kit options in `vite.config.ts` (no `svelte.config.js`).
+`package.json` sets `"bin": { "nipuu": "./src/cli.js" }` and `"type": "module"`. Vite, Svelte, `@sveltejs/kit`, StyleX, Shiki, and inspector fonts are in **dependencies** (npx installs those only). This SvelteKit template keeps Kit options in `vite.config.ts` (no `svelte.config.js`). StyleX is compiled by `@stylexjs/unplugin` in that file.
 
 ## Inspector
 
+- `src/routes/inspector/+layout.svelte` — Logs / Tables nav. Visual rules live in `docs/DESIGN.md`.
 - `src/routes/inspector/+page.server.ts` — `load` returns the current log list.
 - `src/routes/inspector/logs/+server.ts` — `GET` JSON for a ~1s client poll.
-- `src/routes/inspector/+page.svelte` — master/detail logs. Never import `$lib/server` from the page.
-- `src/routes/inspector/tables/+page.server.ts` — `load` returns seeded table names via `listTables()`.
-- `src/routes/inspector/tables/[table]/+page.server.ts` — `load` queries a `Table` (search, typed filters, offset pagination); form actions `create` / `update` / `delete` call `insert` / `update` / `deleteRow`. Unknown table is **404**.
-- `src/routes/inspector/tables/+page.svelte` and `src/routes/inspector/tables/[table]/+page.svelte` — table list and unstyled browser. Never import `$lib/server` from the page.
+- `src/routes/inspector/+page.svelte` — request list. Each row links to `/_nipuu/requests/:id`. Never import `$lib/server` from the page.
+- `src/routes/inspector/requests/[id]/+page.server.ts` — `load` returns `getLog(params.id)` and Shiki-highlighted JSON for headers and bodies. Unknown id is **404**.
+- `src/routes/inspector/requests/[id]/+page.svelte` — request detail: Params / Query table plus highlighted JSON. Never import `$lib/server` from the page.
+- `src/routes/inspector/tables/+page.server.ts` — `load` returns model summaries with row, property, and related-model counts.
+- `src/routes/inspector/tables/[table]/+page.server.ts` — `load` queries a `Table` (search, typed filters, offset pagination); the `delete` action calls `deleteRow`. Unknown table is **404**. Search (`q`) and per-property filters are both query params, so the page reads its whole state from the URL.
+- `src/routes/inspector/tables/[table]/new/+page.server.ts` — `load` returns the field metas; the default action validates and `insert`s, then redirects to the table.
+- `src/routes/inspector/tables/[table]/edit/+page.server.ts` — `load` finds the row from identity query params (**400** without them, **404** when missing); the default action validates a partial payload and `update`s, then redirects to the table.
+- All three loads also return `relations` from `relationOptions` — the existing values each relation field can point at, capped at 100 per field — so the inspector can offer a picker instead of a raw id box. The write actions run `resolveRelationLabels` over the form data first, turning a typed label back into the value it stands for.
+- `src/routes/inspector/tables/+page.svelte`, `[table]/+page.svelte`, `[table]/new/+page.svelte`, `[table]/edit/+page.svelte` — table list, browser, and the two row forms. Never import `$lib/server` from a page.
+- Inspector UI uses StyleX (`stylex.attrs`) and `$lib/ui` components. Tokens are `$lib/ui/shared/tokens.stylex.ts`.
 
 Inspector table pages are control-plane (`/_nipuu/tables/...`). They call `initRuntime()` only to ensure seed ran, then use `getTable()` / `listTables()`. They never call `handleRequest()`, never match `ROUTE`, and are not appended to the mock request log.

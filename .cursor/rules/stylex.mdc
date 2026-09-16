@@ -1,0 +1,26 @@
+---
+description: StyleX attrs and token patterns for inspector UI
+globs: src/lib/ui/**,src/routes/inspector/**/*.svelte
+alwaysApply: false
+---
+
+# StyleX inspector UI
+
+```svelte
+<script lang="ts">
+	import * as stylex from '@stylexjs/stylex';
+	import { chrome } from '$lib/ui/shared/shell/chrome.style';
+</script>
+
+<h1 {...stylex.attrs(chrome.title)}>Requests</h1>
+```
+
+```svelte
+<!-- BAD: React API, scoped CSS, new palette -->
+<div className={stylex.props(styles.root).className}></div>
+<style> h1 { color: tomato; } </style>
+```
+
+- Reset CSS (`$lib/ui/shared/reset.css`) must not set `color` on `a`. Unlayered CSS beats StyleX layers, so link color would never show.
+- Create styles in colocated `*.style.ts` files or `$lib/ui/shared/`, not in `<style>`.
+- Spread `stylex.attrs(...)`. Conditional: `stylex.attrs(base, on && extra)`.

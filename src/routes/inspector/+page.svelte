@@ -1,16 +1,20 @@
 <script lang="ts">
 	import { INSPECTOR_URL } from '$lib/inspector';
 	import type { LogEntry } from '$lib/types';
+	import { statusTone } from '$lib/ui/shared/http/status';
+	import { chrome } from '$lib/ui/shared/shell/chrome.style';
+	import { logs as logStyles } from '$lib/ui/shared/shell/logs.style';
+	import * as stylex from '@stylexjs/stylex';
+	import type { PageProps } from './$types';
 
-	let { data } = $props();
-	let polled = $state<LogEntry[] | null>(null);
-	let selectedId = $state<string | null>(null);
+	let { data }: PageProps = $props();
+	let polled = $state.raw<LogEntry[] | null>(null);
 	const logs = $derived(polled ?? data.logs);
 
 	$effect(() => {
 		const timer = setInterval(async () => {
 			try {
-				const response = await fetch('/_nipuu/logs');
+				const response = await fetch(`${INSPECTOR_URL}/logs`);
 				if (!response.ok) return;
 				const payload = (await response.json()) as { logs: LogEntry[] };
 				polled = payload.logs;
@@ -21,60 +25,37 @@
 
 		return () => clearInterval(timer);
 	});
-
-	const selected = $derived(logs.find((entry) => entry.id === selectedId) ?? null);
-
-	function select(id: string) {
-		selectedId = id;
-	}
-
-	function pretty(value: unknown) {
-		return JSON.stringify(value, null, 2);
-	}
 </script>
 
 <svelte:head>
 	<title>Nipuu Inspector</title>
 </svelte:head>
 
-<h1>Nipuu Inspector</h1>
-
-<p><a href="{INSPECTOR_URL}/tables">Tables</a></p>
+<h1 {...stylex.attrs(chrome.title)}>Requests</h1>
+<span {...stylex.attrs(chrome.titleMark)} aria-hidden="true"></span>
 
 {#if logs.length === 0}
-	<p>No requests yet.</p>
+	<p {...stylex.attrs(chrome.empty)}>No requests yet. Call a mock route to see it here.</p>
 {:else}
-	<section>
-		<h2>Requests</h2>
-		<ul>
-			{#each logs as entry (entry.id)}
-				<li>
-					<button type="button" onclick={() => select(entry.id)}>
-						{entry.method} {entry.path} — {entry.status} ({entry.duration}ms)
-					</button>
-				</li>
-			{/each}
-		</ul>
-	</section>
-{/if}
-
-{#if selected}
-	<section>
-		<h2>Detail</h2>
-		<p>Status: {selected.status}</p>
-		<p>Duration: {selected.duration}ms</p>
-		<p>Time: {selected.at}</p>
-		<h3>Params</h3>
-		<pre>{pretty(selected.params)}</pre>
-		<h3>Query</h3>
-		<pre>{pretty(selected.queries)}</pre>
-		<h3>Request headers</h3>
-		<pre>{pretty(selected.requestHeaders)}</pre>
-		<h3>Request body</h3>
-		<pre>{pretty(selected.requestBody)}</pre>
-		<h3>Response headers</h3>
-		<pre>{pretty(selected.responseHeaders)}</pre>
-		<h3>Response body</h3>
-		<pre>{pretty(selected.responseBody)}</pre>
-	</section>
+	<ul {...stylex.attrs(logStyles.list)}>
+		{#each logs as entry (entry.id)}
+			{@const tone = statusTone(entry.status)}
+			<li>
+				<a href="{INSPECTOR_URL}/requests/{entry.id}" {...stylex.attrs(logStyles.row)}>
+					<span {...stylex.attrs(logStyles.method)}>{entry.method}</span>
+					<span {...stylex.attrs(logStyles.path)}>{entry.path}</span>
+					<span
+						title="HTTP status"
+						{...stylex.attrs(
+							logStyles.status,
+							tone === 'ok' && logStyles.statusOk,
+							tone === 'neutral' && logStyles.statusNeutral,
+							tone === 'error' && logStyles.statusError
+						)}>{entry.status}</span
+					>
+					<span title="Time to respond" {...stylex.attrs(logStyles.meta)}>{entry.duration}ms</span>
+				</a>
+			</li>
+		{/each}
+	</ul>
 {/if}

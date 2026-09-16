@@ -1,0 +1,99 @@
+import * as stylex from '@stylexjs/stylex';
+import { colors, radius, space, typography } from '$lib/ui/shared/tokens.stylex';
+
+export const paramTabs = stylex.create({
+	frame: {
+		margin: 0,
+		overflow: 'hidden',
+		backgroundColor: colors.muted,
+		borderWidth: 1,
+		borderStyle: 'solid',
+		borderColor: colors.border,
+		borderRadius: radius.control
+	},
+	tablist: {
+		display: 'flex',
+		alignItems: 'stretch',
+		gap: space.lg,
+		paddingInline: space.md,
+		backgroundColor: colors.background,
+		borderBottomWidth: 1,
+		borderBottomStyle: 'solid',
+		borderBottomColor: colors.border
+	},
+	tab: {
+		appearance: 'none',
+		margin: 0,
+		marginBottom: -1,
+		padding: 0,
+		paddingBlock: space.sm,
+		backgroundColor: 'transparent',
+		borderWidth: 0,
+		borderBottomWidth: 2,
+		borderBottomStyle: 'solid',
+		borderBottomColor: 'transparent',
+		fontFamily: typography.fontBody,
+		fontSize: typography.sizeLabel,
+		fontWeight: typography.weightBody,
+		lineHeight: typography.lineTight,
+		color: colors.mutedForeground,
+		cursor: 'pointer',
+		':hover': {
+			color: colors.foreground
+		},
+		':focus-visible': {
+			outlineWidth: 2,
+			outlineStyle: 'solid',
+			outlineColor: colors.ring,
+			outlineOffset: 2
+		}
+	},
+	tabCurrent: {
+		color: colors.primary,
+		fontWeight: typography.weightStrong,
+		borderBottomColor: colors.primary
+	},
+	panel: {
+		padding: space.xs
+	},
+	empty: {
+		margin: 0,
+		paddingInline: space.sm,
+		paddingBlock: space.sm,
+		fontFamily: typography.fontBody,
+		fontSize: typography.sizeLabel,
+		color: colors.mutedForeground
+	},
+	table: {
+		borderCollapse: 'collapse'
+	},
+	th: {
+		paddingBlock: space.xs,
+		paddingInline: space.sm,
+		fontFamily: typography.fontBody,
+		fontSize: typography.sizeLabel,
+		fontWeight: typography.weightStrong,
+		color: colors.mutedForeground,
+		backgroundColor: colors.background,
+		borderWidth: 1,
+		borderStyle: 'solid',
+		borderColor: colors.border,
+		whiteSpace: 'nowrap'
+	},
+	keyCol: {
+		width: '12rem'
+	},
+	td: {
+		paddingBlock: space.xs,
+		paddingInline: space.sm,
+		color: colors.foreground,
+		verticalAlign: 'middle',
+		backgroundColor: colors.background,
+		borderWidth: 1,
+		borderStyle: 'solid',
+		borderColor: colors.border
+	},
+	key: {
+		color: colors.primary
+	}
+});

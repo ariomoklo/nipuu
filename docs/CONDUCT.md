@@ -13,7 +13,7 @@ Agents and contributors must follow `docs/` while working in this repository. `d
 - Planning documents **must not** be placed in `docs/`.
 - Do not mix the two. Do not add RFCs, next-phase contracts, or “for the next agent” write-ups under `docs/`.
 
-Read `docs/CONDUCT.md` and `docs/ARCHITECTURE.md` before changing architecture, routes, MODEL/ROUTE behavior, the CLI, the inspector, tests, or documentation.
+Read `docs/CONDUCT.md` and `docs/ARCHITECTURE.md` before changing architecture, routes, MODEL/ROUTE behavior, the CLI, the inspector, tests, or documentation. Read `docs/DESIGN.md` before changing inspector UI, StyleX, or `$lib/ui`.
 
 ## Architecture rules
 
@@ -21,7 +21,8 @@ Read `docs/CONDUCT.md` and `docs/ARCHITECTURE.md` before changing architecture, 
 - `src/hooks.server.ts` only composes `sequence()`. Domain logic stays in `src/lib/server/**`.
 - The client never imports `$lib/server`. Shared DTOs live in `src/lib/types/`.
 - `App.Locals` is only `requestId` and `startedAt`.
-- Do not implement features that `docs/` and `plans/` mark as future work (persistence, inspector styling, SSE) unless a later plan in `plans/` is being executed.
+- Do not implement features that `docs/` and `plans/` mark as future work (persistence, SSE) unless a later plan in `plans/` is being executed.
+- Inspector UI follows `docs/DESIGN.md`. Do not invent tokens, type, or StyleX patterns.
 
 ## Functional style
 
@@ -39,6 +40,7 @@ Group utilities by use.
 - If a use case has a test file, move it to a subdirectory (`table/filter/filter.ts` + `table/filter/filter.test.ts`).
 - If a use case splits into multiple implementation files, move it to a subdirectory (`table/query/query.ts`, `table/query/parse.ts`, `table/query/query.test.ts`).
 - Module `index.ts` and `index.test.ts` stay at the module root. Parent `index.ts` is the public barrel. Outside callers import `$lib/server/table`, not a deep path.
+- Inspector UI is not a server barrel. Each component lives in its own folder (`$lib/ui/button/button.svelte` + colocated `button.style.ts`). Shared tokens, reset, helpers, and cross-component StyleX live under `$lib/ui/shared/`. Input-kind components live under `$lib/ui/input/`.
 - In each file, put unexported local functions (and unexported types/constants they need) at the top. Put exported functions, objects, and variables at the bottom.
 
 ## Formatting
@@ -62,6 +64,7 @@ export function resetTables() {
 
 - Smallest change that matches the current contract.
 - Always import project modules with `$lib/...` aliases. Never use relative imports (`./` or `../`). The only exception is SvelteKit-generated `./$types` in route files.
+- Inspector UI imports are explicit files, not barrels: `$lib/ui/button/button.svelte`, not `$lib/ui` or `$lib/ui/button`. Input-kind components (`input`, `select`, `relation-input`, `field-control`, and future field controls) live under `$lib/ui/input/<name>/<name>.svelte`.
 - Generated content is English only.
 - Do not commit unless asked.
 - Do not put planning notes in `docs/`.
