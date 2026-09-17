@@ -1,11 +1,12 @@
 import { pathToFileURL } from 'node:url';
 import type { ModelDefinition } from '$lib/server/model';
-import type { PresetDefinition, RouteHandler } from '$lib/types';
+import type { PluginDefinition, PresetDefinition, RouteHandler } from '$lib/types';
 
 export type ConfigDefinition = {
 	MODEL: ModelDefinition;
 	ROUTE: Record<string, Record<string, RouteHandler>>;
 	PRESET?: PresetDefinition;
+	PLUGIN?: PluginDefinition;
 };
 
 export async function loadConfig(): Promise<ConfigDefinition> {
@@ -21,7 +22,12 @@ export async function loadConfig(): Promise<ConfigDefinition> {
 		throw new Error(`Config must export MODEL and ROUTE: ${configPath}`);
 	}
 
-	return { MODEL: imported.MODEL, ROUTE: imported.ROUTE, PRESET: imported.PRESET };
+	return {
+		MODEL: imported.MODEL,
+		ROUTE: imported.ROUTE,
+		PRESET: imported.PRESET,
+		PLUGIN: imported.PLUGIN,
+	};
 }
 
 export function readSeedCount(): number {

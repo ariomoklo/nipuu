@@ -3,6 +3,7 @@ import { dispatch, notFound, type DispatchContext } from '$lib/server/handlers';
 import { waitDelay } from '$lib/server/handlers/delay/delay';
 import { mapResponse } from '$lib/server/handlers/respond/respond';
 import { appendLog } from '$lib/server/logs';
+import { runPlugins } from '$lib/server/plugin';
 import { applyPreset } from '$lib/server/preset';
 import { matchRoute } from '$lib/server/router';
 import { getConfig } from '$lib/server/runtime';
@@ -83,8 +84,8 @@ export async function handleRequest(event: RequestEvent): Promise<Response> {
 
 	const actionBody = await peekBody(response);
 	const afterPreset = await applyPreset(response, actionBody, context);
-	const finalResponse = mapIfRoute(handler, actionBody, context, afterPreset);
-	// later: MIDDLEWARE array, in index order, each seeing the route Response
+	const mapped = mapIfRoute(handler, actionBody, context, afterPreset);
+	const finalResponse = await runPlugins(mapped, context);
 	const responseBody = finalResponse === response ? actionBody : await peekBody(finalResponse);
 	appendLog({
 		id: requestId,

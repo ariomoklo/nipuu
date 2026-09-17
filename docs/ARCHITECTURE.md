@@ -1,6 +1,6 @@
 # Nipuu architecture
 
-Nipuu is a mock API CLI hosted by SvelteKit. User APIs are runtime data (`MODEL` + `ROUTE`, and optionally `PRESET`, from a config file). First-party UI is a real SvelteKit app. Domain logic never lives in `hooks.server.ts` or `+page.svelte`.
+Nipuu is a mock API CLI hosted by SvelteKit. User APIs are runtime data (`MODEL` + `ROUTE`, and optionally `PRESET` and `PLUGIN`, from a config file). First-party UI is a real SvelteKit app. Domain logic never lives in `hooks.server.ts` or `+page.svelte`.
 
 ## Two-plane host
 
@@ -49,12 +49,13 @@ Process-lifetime state (config, compiled schemas, tables, logs, field-schema reg
 | Module | Role |
 |---|---|
 | `runtime/` | `initRuntime()` loads config, compiles MODEL, seeds tables. `handleRequest(event)` is the data-plane entry. Config and schemas live on `globalThis`. |
-| `runtime/config.ts` | `pathToFileURL` + dynamic import of `NIPUU_CONFIG`. Fail fast if `MODEL` / `ROUTE` are missing. `PRESET` is optional. |
-| `runtime/handle.ts` | Match `ROUTE`, dispatch, apply `PRESET`, run the route mapper, append a log. Body read/peek are unexported locals. |
+| `runtime/config.ts` | `pathToFileURL` + dynamic import of `NIPUU_CONFIG`. Fail fast if `MODEL` / `ROUTE` are missing. `PRESET` and `PLUGIN` are optional. |
+| `runtime/handle.ts` | Match `ROUTE`, dispatch, apply `PRESET`, run the route mapper, run `PLUGIN`, append a log. Body read/peek are unexported locals. |
 | `model/` | `generateSchemas()`, field factory, `validate()`. Types in `types.ts`. No SvelteKit imports. |
 | `table/` | In-memory `Table` map, seed, relation snapshots, `find` / `select` / `query` / `insert` / `update` / `deleteRow`. |
 | `router/` | Parse `/todos/:id` patterns, match method + path, extract params. No SvelteKit imports. |
 | `preset/` | `applyPreset()` overrides a response body by method and status from the optional `PRESET` export. Status keys may be exact or globs (`"5**"`, `"*"`). |
+| `plugin/` | `runPlugins()` runs the optional `PLUGIN` array in index order after the route mapper. Each function gets `PluginContext` and its return value becomes the next `Response`. |
 | `handlers/` | Dispatch `static` / `search` / `find` / `upsert` / `update` / `delete`. Validation runs inside mutating actions. |
 | `logs.ts` | In-memory ring buffer: `appendLog` / `listLogs` / `getLog`. |
 | `http/` | CORS, control-plane predicate, data-plane handle. |
@@ -77,7 +78,8 @@ Mock-server scenario tests (`npm run test:mock`, project `mock`) live in `src/te
 - `upsert` (full) and `update` (partial) call `validate()`. Failure is **400** and does not write rows.
 - Optional CRUD `response(RouteContext)` maps the action result after `PRESET`. The shared base is `{ data, model, status, method, path, params, queries, body }`; ROUTE also gets `response` (the `Response` after PRESET). `data` is the action result. Returning a `Response` uses it as-is; any other value is JSON at `response.status`.
 - Optional `delay` (milliseconds) on any HTTP method’s object handler waits after that method’s action and before the log. Shorthand string or number handlers cannot delay. Omitted, `0`, negative, or non-finite `delay` is no wait. Unmatched 404 is not delayed. Inspector `duration` includes the wait.
-- Optional `PRESET` (`method → status → leaf`, `'*'` wildcard for method, status globs such as `"5**"`) runs after the action and after `delay`, before the route mapper, on every data-plane response. An exact method beats `'*'`, an exact status beats a glob, and `{ '*': { '*': leaf } }` is the catch-all for any uncaught method and status. A static leaf keeps the action status; a function leaf gets `PresetContext` (no `response`) and may return a `Response`. Never applies to the control plane. A later `MIDDLEWARE` array (not implemented) will run after the route mapper, in index order.
+- Optional `PRESET` (`method → status → leaf`, `'*'` wildcard for method, status globs such as `"5**"`) runs after the action and after `delay`, before the route mapper, on every data-plane response. An exact method beats `'*'`, an exact status beats a glob, and `{ '*': { '*': leaf } }` is the catch-all for any uncaught method and status. A static leaf keeps the action status; a function leaf gets `PresetContext` (no `response`) and may return a `Response`. Never applies to the control plane.
+- Optional `PLUGIN` (an array of functions) runs last, after the route mapper, in index order, on every data-plane response including an unmatched 404. Each function gets `PluginContext`: the shared base without `data`, plus a required `response` (and `status`) that is the response the previous plugin produced. A returned `Response` is used as-is; any other value is JSON at the incoming status, so a plugin that returns nothing empties the body. Returning the incoming `response` is the pass-through. A non-function entry is **500**. Never applies to the control plane.
 - Every data-plane request is logged. Control-plane requests are not logged as mock API calls.
 
 ## CLI and npx

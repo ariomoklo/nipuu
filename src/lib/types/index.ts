@@ -73,3 +73,11 @@ export type RouteContext = ResponseContext & {
 export type PresetLeaf = unknown | ((context: PresetContext) => unknown);
 
 export type PresetDefinition = Record<string, Record<string, PresetLeaf>>;
+
+export type PluginContext = Omit<ResponseContext, 'data'> & {
+	response: Response;
+};
+
+export type PluginHandler = (context: PluginContext) => unknown;
+
+export type PluginDefinition = PluginHandler[];
