@@ -117,6 +117,12 @@ export const ROUTE = {
 			},
 		},
 	},
+	'/plugin/todos': {
+		GET: {
+			action: 'search',
+			model: 'todos',
+		},
+	},
 	'/gone/:id': {
 		GET: {
 			action: 'find',
@@ -138,3 +144,17 @@ export const PRESET = {
 		404: { error: 'Nothing here' },
 	},
 };
+
+export const PLUGIN = [
+	async ({ path, response }) => {
+		if (!path.startsWith('/plugin')) return response;
+		return { data: await response.clone().json(), plugin: 'envelope' };
+	},
+	async ({ status, response }) => {
+		const body = await response.clone().text();
+		const headers = Object.fromEntries(response.headers.entries());
+		headers['x-plugin'] = 'stamp';
+		headers['x-plugin-after'] = body.includes('"plugin":"envelope"') ? 'envelope' : 'route';
+		return new Response(body, { status, headers });
+	},
+];

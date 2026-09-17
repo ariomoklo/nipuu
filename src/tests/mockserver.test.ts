@@ -130,6 +130,38 @@ describe('Mock server', () => {
 		});
 	});
 
+	describe('Scenario: plugin queue', () => {
+		it('GET /plugin/todos wraps the route body and stamps headers in index order', async () => {
+			const res = await request<{ data: Todo[]; plugin: string }>('GET', '/plugin/todos');
+			expect(res.status).toBe(200);
+			expect(res.body.plugin).toBe('envelope');
+			expect(res.body.data).toHaveLength(2);
+			expect(res.headers.get('x-plugin')).toBe('stamp');
+			expect(res.headers.get('x-plugin-after')).toBe('envelope');
+		});
+
+		it('an unmatched path still runs the plugin queue over the preset body', async () => {
+			const res = await request<{ data: ApiError; plugin: string }>('GET', '/plugin/nope');
+			expect(res.status).toBe(404);
+			expect(res.body).toEqual({ data: { error: 'Nothing here' }, plugin: 'envelope' });
+			expect(res.headers.get('x-plugin-after')).toBe('envelope');
+		});
+
+		it('a plugin that returns the incoming response leaves the body untouched', async () => {
+			const res = await request('GET', '/');
+			expect(res.body).toBe('Hello!');
+			expect(res.headers.get('x-plugin')).toBe('stamp');
+			expect(res.headers.get('x-plugin-after')).toBe('route');
+		});
+
+		it('keeps the headers a route mapper set before the queue ran', async () => {
+			const res = await request('GET', '/gone/7');
+			expect(res.status).toBe(410);
+			expect(res.headers.get('x-preset')).toBe('gone');
+			expect(res.headers.get('x-plugin')).toBe('stamp');
+		});
+	});
+
 	describe('Scenario: delayed response', () => {
 		it.each(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const)(
 			'%s /slow waits at least 1500ms',

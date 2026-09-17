@@ -132,3 +132,17 @@ export const PRESET = {
     404: { error: "Nothing here" },
   },
 };
+
+export const PLUGIN = [
+  // Runs first: wrap every /users/:id/todos body in an envelope.
+  async ({ path, response }) => {
+    if (!path.endsWith("/todos") || path === "/todos") return response;
+    return { data: await response.clone().json(), source: path };
+  },
+  // Runs next, on whatever the first plugin returned: stamp a header.
+  async ({ status, response }) =>
+    new Response(await response.clone().text(), {
+      status,
+      headers: { ...Object.fromEntries(response.headers), "x-mock": "nipuu" },
+    }),
+];

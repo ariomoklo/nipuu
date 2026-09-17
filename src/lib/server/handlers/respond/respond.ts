@@ -1,10 +1,9 @@
 import { projectStore } from '$lib/server/handlers/project';
 import type { DispatchContext } from '$lib/server/handlers/sources/sources';
-import type { PresetContext, RouteContext, RouteHandlerObject } from '$lib/types';
+import type { PluginContext, PresetContext, RouteContext, RouteHandlerObject } from '$lib/types';
 
-function toBaseContext(data: unknown, context: DispatchContext, status: number): PresetContext {
+function toDatalessContext(context: DispatchContext, status: number): Omit<PresetContext, 'data'> {
 	return {
-		data,
 		model: projectStore(),
 		status,
 		method: context.method,
@@ -13,6 +12,10 @@ function toBaseContext(data: unknown, context: DispatchContext, status: number):
 		queries: context.queries,
 		body: context.body,
 	};
+}
+
+function toBaseContext(data: unknown, context: DispatchContext, status: number): PresetContext {
+	return { data, ...toDatalessContext(context, status) };
 }
 
 export function json(data: unknown, status = 200): Response {
@@ -69,6 +72,13 @@ export function toRouteContext(
 ): RouteContext {
 	return {
 		...toBaseContext(data, context, response.status),
+		response,
+	};
+}
+
+export function toPluginContext(context: DispatchContext, response: Response): PluginContext {
+	return {
+		...toDatalessContext(context, response.status),
 		response,
 	};
 }

@@ -36,9 +36,10 @@ The config path is required.
 export const MODEL = { /* tables */ };
 export const ROUTE = { /* HTTP routes */ };
 export const PRESET = { /* optional: default responses by status */ };
+export const PLUGIN = [ /* optional: response handlers, in order */ ];
 ```
 
-`.mjs` is always treated as ESM, so this works in an empty directory. A `.js` config also works if that file sits in a package with `"type": "module"`. If `MODEL` or `ROUTE` is missing, Nipuu exits on startup. `PRESET` is optional.
+`.mjs` is always treated as ESM, so this works in an empty directory. A `.js` config also works if that file sits in a package with `"type": "module"`. If `MODEL` or `ROUTE` is missing, Nipuu exits on startup. `PRESET` and `PLUGIN` are optional.
 
 ### MODEL
 
@@ -209,20 +210,20 @@ response: ({ data }) =>
 
 ### Response context
 
-`PRESET` functions and ROUTE `response` functions share the same base fields. ROUTE also receives `response`.
+`PRESET` functions and ROUTE `response` functions share the same base fields. ROUTE also receives `response`. `PLUGIN` functions get the same base without `data`, and always receive `response`.
 
 
 | Key        | Value                                                                 |
 | ---------- | --------------------------------------------------------------------- |
-| `data`     | The action result.                                                    |
+| `data`     | The action result. Not on PLUGIN.                                     |
 | `model`    | The current store: plain rows, keyed by table name.                   |
-| `status`   | The action status for PRESET; `response.status` after PRESET for ROUTE. |
+| `status`   | The action status for PRESET; `response.status` after PRESET for ROUTE; the incoming `response.status` for PLUGIN. |
 | `method`   | Request method.                                                       |
 | `path`     | Request path.                                                         |
 | `params`   | Path params.                                                          |
 | `queries`  | Query string.                                                         |
 | `body`     | Request body.                                                         |
-| `response` | The `Response` after PRESET. Only on ROUTE.                           |
+| `response` | The `Response` after PRESET on ROUTE; the previous stage's `Response` on PLUGIN. Not on PRESET. |
 
 
 ### PRESET
@@ -257,6 +258,31 @@ A leaf is a static value or a function, exactly like a route handler's `response
 
 
 Resolution runs after the route action and after `delay`, on every data-plane response, then the route mapper runs. Never applies to the control plane.
+
+### PLUGIN
+
+`PLUGIN` is optional. It is an after-hook: an array of functions that run once the route is done, in index order, on every data-plane response. Use it for a response envelope, extra headers, or anything that should apply to the whole mock API.
+
+```js
+export const PLUGIN = [
+  ({ response }) => response, // pass through: return the response you were given
+  async ({ path, response }) => {
+    if (!path.startsWith('/v1')) return response;
+    return { data: await response.clone().json(), version: 1 };
+  },
+  async ({ status, response }) =>
+    new Response(await response.clone().text(), {
+      status,
+      headers: { ...Object.fromEntries(response.headers), 'x-mock': 'nipuu' }
+    })
+];
+```
+
+With `PLUGIN = [fnA, fnB, handleC]`, `fnA` runs first on the route's response, `fnB` runs on `fnA`'s response, then `handleC` runs on `fnB`'s. Each function receives the plugin context: the response context without `data`, plus `status` and `response` from the response it was handed.
+
+A return value is treated exactly like a route handler's `response`: a `Response` is used as-is, anything else is JSON at the incoming status. So a plugin that returns nothing empties the body — return `response` to pass through untouched. Plugins are awaited, so async plugins work. A non-function entry is 500 `{ "error": "Invalid plugin" }`.
+
+The queue runs after `PRESET` and after the route's own `response()`, including on unmatched 404s, and is the last step before the request is logged. Never applies to the control plane.
 
 ## Inspector
 
