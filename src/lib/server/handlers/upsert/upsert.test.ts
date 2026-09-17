@@ -39,7 +39,7 @@ describe('upsertAction', () => {
 		const owner = toStore().users[0]!.id.value;
 		const res = dispatch(
 			{ action: 'upsert', model: 'todos' },
-			{ params: {}, queries: {}, body: { title: 'New', owner } },
+			{ method: 'POST', path: '/todos', params: {}, queries: {}, body: { title: 'New', owner } },
 		);
 		expect(res.status).toBe(200);
 		expect(await res.json()).toEqual({
@@ -54,7 +54,13 @@ describe('upsertAction', () => {
 		const owner = toStore().users[0]!.id.value;
 		const res = dispatch(
 			{ action: 'upsert', model: 'todos' },
-			{ params: {}, queries: {}, body: { id: 1, title: 'Replaced', owner, completed: true } },
+			{
+				method: 'POST',
+				path: '/todos',
+				params: {},
+				queries: {},
+				body: { id: 1, title: 'Replaced', owner, completed: true },
+			},
 		);
 		expect(res.status).toBe(200);
 		expect(await res.json()).toEqual({
@@ -68,7 +74,13 @@ describe('upsertAction', () => {
 	it('returns 400 when validation fails', async () => {
 		const res = dispatch(
 			{ action: 'upsert', model: 'todos' },
-			{ params: {}, queries: {}, body: { title: 'No owner' } },
+			{
+				method: 'POST',
+				path: '/todos',
+				params: {},
+				queries: {},
+				body: { title: 'No owner' },
+			},
 		);
 		expect(res.status).toBe(400);
 		const body = await res.json();

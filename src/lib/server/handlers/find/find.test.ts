@@ -31,19 +31,37 @@ afterEach(() => {
 
 describe('findAction', () => {
 	it('returns one projected row', async () => {
-		const res = dispatch(findHandler, { params: { id: '2' }, queries: {}, body: null });
+		const res = dispatch(findHandler, {
+			method: 'GET',
+			path: '/todos/2',
+			params: { id: '2' },
+			queries: {},
+			body: null,
+		});
 		expect(res.status).toBe(200);
 		expect(await res.json()).toEqual({ id: 2, title: 'Todo 2', completed: false });
 	});
 
 	it('returns 404 when no row matches', async () => {
-		const res = dispatch(findHandler, { params: { id: '99' }, queries: {}, body: null });
+		const res = dispatch(findHandler, {
+			method: 'GET',
+			path: '/todos/99',
+			params: { id: '99' },
+			queries: {},
+			body: null,
+		});
 		expect(res.status).toBe(404);
 		expect(await res.json()).toEqual({ error: 'Not Found' });
 	});
 
 	it('returns 404 when a where value is missing', async () => {
-		const res = dispatch(findHandler, { params: {}, queries: {}, body: null });
+		const res = dispatch(findHandler, {
+			method: 'GET',
+			path: '/todos',
+			params: {},
+			queries: {},
+			body: null,
+		});
 		expect(res.status).toBe(404);
 	});
 });

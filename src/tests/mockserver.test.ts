@@ -93,13 +93,40 @@ describe('Mock server', () => {
 		it('GET /todos/:id returns 404 when the id is missing', async () => {
 			const res = await request('GET', '/todos/99');
 			expect(res.status).toBe(404);
-			expect(res.body).toEqual({ error: 'Not Found' });
+			expect(res.body).toEqual({ error: 'todo 99 not found' });
 		});
 
 		it('GET /unknown returns 404', async () => {
 			const res = await request('GET', '/unknown');
 			expect(res.status).toBe(404);
+			expect(res.body).toEqual({ error: 'Nothing here' });
+		});
+	});
+
+	describe('Scenario: preset responses', () => {
+		it('GET on an unmatched path uses the wildcard 404 preset', async () => {
+			const res = await request('GET', '/nope');
+			expect(res.status).toBe(404);
+			expect(res.body).toEqual({ error: 'Nothing here' });
+		});
+
+		it('GET /todos/:id uses the route mapper after the GET 404 preset', async () => {
+			const res = await request('GET', '/todos/404');
+			expect(res.status).toBe(404);
+			expect(res.body).toEqual({ error: 'todo 404 not found' });
+		});
+
+		it('POST on an unmatched path is not covered by the GET preset', async () => {
+			const res = await request('POST', '/nope');
+			expect(res.status).toBe(404);
 			expect(res.body).toEqual({ error: 'Not Found' });
+		});
+
+		it('a route mapper that returns a Response sets its own status and headers', async () => {
+			const res = await request('GET', '/gone/7');
+			expect(res.status).toBe(410);
+			expect(res.headers.get('x-preset')).toBe('gone');
+			expect(res.body).toEqual({ id: '7' });
 		});
 	});
 
@@ -202,7 +229,7 @@ describe('Mock server', () => {
 		it('GET /todos/:id returns 404 after delete', async () => {
 			const res = await request('GET', `/todos/${createdId}`);
 			expect(res.status).toBe(404);
-			expect(res.body).toEqual({ error: 'Not Found' });
+			expect(res.body).toEqual({ error: `todo ${createdId} not found` });
 		});
 
 		it('DELETE /todos/:id returns 404 when the row is already gone', async () => {

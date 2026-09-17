@@ -45,6 +45,8 @@ afterEach(() => {
 describe('updateAction', () => {
 	it('patches fields from the body map', async () => {
 		const res = dispatch(updateHandler, {
+			method: 'PUT',
+			path: '/todos/1',
 			params: { id: '1' },
 			queries: {},
 			body: { title: 'Renamed', completed: true },
@@ -54,13 +56,21 @@ describe('updateAction', () => {
 	});
 
 	it('applies a row function patch', async () => {
-		const res = dispatch(toggleHandler, { params: { id: '1' }, queries: {}, body: null });
+		const res = dispatch(toggleHandler, {
+			method: 'PUT',
+			path: '/todos/1/toggle',
+			params: { id: '1' },
+			queries: {},
+			body: null,
+		});
 		expect(res.status).toBe(200);
 		expect(await res.json()).toEqual({ id: 1, title: 'Todo 1', completed: true });
 	});
 
 	it('returns 404 when the row is missing', async () => {
 		const res = dispatch(updateHandler, {
+			method: 'PUT',
+			path: '/todos/9',
 			params: { id: '9' },
 			queries: {},
 			body: { title: 'Nope' },
@@ -70,6 +80,8 @@ describe('updateAction', () => {
 
 	it('returns 400 when the body fails partial validation', async () => {
 		const res = dispatch(updateHandler, {
+			method: 'PUT',
+			path: '/todos/1',
 			params: { id: '1' },
 			queries: {},
 			body: { completed: 'yes' },

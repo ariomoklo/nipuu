@@ -1,6 +1,6 @@
 import { deleteAction } from '$lib/server/handlers/delete/delete';
 import { findAction } from '$lib/server/handlers/find/find';
-import { json, text } from '$lib/server/handlers/respond';
+import { json, text } from '$lib/server/handlers/respond/respond';
 import { searchAction } from '$lib/server/handlers/search/search';
 import type { DispatchContext } from '$lib/server/handlers/sources/sources';
 import { staticAction } from '$lib/server/handlers/static/static';
@@ -35,5 +35,5 @@ export function dispatch(handler: RouteHandler, context: DispatchContext): Respo
 	}
 }
 
-export { notFound, validationError } from '$lib/server/handlers/respond';
+export { notFound, validationError } from '$lib/server/handlers/respond/respond';
 export type { DispatchContext };

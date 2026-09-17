@@ -1,6 +1,6 @@
 # Nipuu architecture
 
-Nipuu is a mock API CLI hosted by SvelteKit. User APIs are runtime data (`MODEL` + `ROUTE` from a config file). First-party UI is a real SvelteKit app. Domain logic never lives in `hooks.server.ts` or `+page.svelte`.
+Nipuu is a mock API CLI hosted by SvelteKit. User APIs are runtime data (`MODEL` + `ROUTE`, and optionally `PRESET`, from a config file). First-party UI is a real SvelteKit app. Domain logic never lives in `hooks.server.ts` or `+page.svelte`.
 
 ## Two-plane host
 
@@ -9,7 +9,7 @@ Treat SvelteKit as two planes, not as a file-router for user APIs.
 - **Control plane** — `/_nipuu`, `/_app`, `/@…`, `/src`, `/node_modules`, and other Vite/SvelteKit internals. These call `resolve` and use the file router.
 - **Data plane** — every other path. `handle` matches `ROUTE`, runs the route action, logs, and returns a `Response`. It never calls `resolve`.
 
-Unmatched method/path pairs return **404** `{ "error": "Not Found" }`.
+Unmatched method/path pairs return **404** `{ "error": "Not Found" }`, unless `PRESET` matches that method and status.
 
 A catch-all `+server.ts` is the wrong layer: user routes are defined at runtime, `/` would still need a second entry point, and returning a `Response` from `handle` is the documented SvelteKit short-circuit.
 
@@ -49,11 +49,12 @@ Process-lifetime state (config, compiled schemas, tables, logs, field-schema reg
 | Module | Role |
 |---|---|
 | `runtime/` | `initRuntime()` loads config, compiles MODEL, seeds tables. `handleRequest(event)` is the data-plane entry. Config and schemas live on `globalThis`. |
-| `runtime/config.ts` | `pathToFileURL` + dynamic import of `NIPUU_CONFIG`. Fail fast if `MODEL` / `ROUTE` are missing. |
-| `runtime/handle.ts` | Match `ROUTE`, dispatch, append a log. Body read/peek are unexported locals. |
+| `runtime/config.ts` | `pathToFileURL` + dynamic import of `NIPUU_CONFIG`. Fail fast if `MODEL` / `ROUTE` are missing. `PRESET` is optional. |
+| `runtime/handle.ts` | Match `ROUTE`, dispatch, apply `PRESET`, run the route mapper, append a log. Body read/peek are unexported locals. |
 | `model/` | `generateSchemas()`, field factory, `validate()`. Types in `types.ts`. No SvelteKit imports. |
 | `table/` | In-memory `Table` map, seed, relation snapshots, `find` / `select` / `query` / `insert` / `update` / `deleteRow`. |
 | `router/` | Parse `/todos/:id` patterns, match method + path, extract params. No SvelteKit imports. |
+| `preset/` | `applyPreset()` overrides a response body by method and status from the optional `PRESET` export. Status keys may be exact or globs (`"5**"`, `"*"`). |
 | `handlers/` | Dispatch `static` / `search` / `find` / `upsert` / `update` / `delete`. Validation runs inside mutating actions. |
 | `logs.ts` | In-memory ring buffer: `appendLog` / `listLogs` / `getLog`. |
 | `http/` | CORS, control-plane predicate, data-plane handle. |
@@ -74,8 +75,9 @@ Mock-server scenario tests (`npm run test:mock`, project `mock`) live in `src/te
 - `action: "static"` → `response` as the body (JSON for records, arrays, and `null`; `text/plain` for other primitives). Functions and missing `response` are **500**.
 - `search` / `find` / `upsert` / `update` / `delete` run against the in-memory table. `find` / `update` / `delete` miss is **404**. Unknown `action` or `model` is **400**.
 - `upsert` (full) and `update` (partial) call `validate()`. Failure is **400** and does not write rows.
-- Optional CRUD `response({ data, model })` maps the action result. `model` is the projected store.
+- Optional CRUD `response(RouteContext)` maps the action result after `PRESET`. The shared base is `{ data, model, status, method, path, params, queries, body }`; ROUTE also gets `response` (the `Response` after PRESET). `data` is the action result. Returning a `Response` uses it as-is; any other value is JSON at `response.status`.
 - Optional `delay` (milliseconds) on any HTTP method’s object handler waits after that method’s action and before the log. Shorthand string or number handlers cannot delay. Omitted, `0`, negative, or non-finite `delay` is no wait. Unmatched 404 is not delayed. Inspector `duration` includes the wait.
+- Optional `PRESET` (`method → status → leaf`, `'*'` wildcard for method, status globs such as `"5**"`) runs after the action and after `delay`, before the route mapper, on every data-plane response. An exact method beats `'*'`, an exact status beats a glob, and `{ '*': { '*': leaf } }` is the catch-all for any uncaught method and status. A static leaf keeps the action status; a function leaf gets `PresetContext` (no `response`) and may return a `Response`. Never applies to the control plane. A later `MIDDLEWARE` array (not implemented) will run after the route mapper, in index order.
 - Every data-plane request is logged. Control-plane requests are not logged as mock API calls.
 
 ## CLI and npx

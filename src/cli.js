@@ -108,5 +108,6 @@ try {
 	process.exit(1);
 }
 
+console.log(`\nnipuu · config{ ${configPath} } · seed{ ${seed} }`);
+console.log(`nipuu available at:\n`);
 server.printUrls();
-console.log(`Nipuu · config ${configPath} · seed ${seed}`);

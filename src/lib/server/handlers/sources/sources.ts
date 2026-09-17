@@ -2,6 +2,8 @@ import { coerceFieldValue, type FilterSchema, type Table } from '$lib/server/tab
 import type { RouteFieldRef } from '$lib/types';
 
 export type DispatchContext = {
+	method: string;
+	path: string;
 	params: Record<string, string>;
 	queries: Record<string, string>;
 	body: unknown;

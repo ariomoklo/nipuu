@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { dispatch } from '$lib/server/handlers';
 import { staticAction } from '$lib/server/handlers/static/static';
 
-const empty = { params: {}, queries: {}, body: null };
+const empty = { method: 'GET', path: '/', params: {}, queries: {}, body: null };
 
 describe('staticAction', () => {
 	it('returns text/plain for primitives', async () => {

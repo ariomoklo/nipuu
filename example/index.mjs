@@ -65,6 +65,8 @@ export const ROUTE = {
       where: {
         id: { source: "params", key: "id", by: "equal" },
       },
+      response: ({ data, status, params }) =>
+        status === 404 ? { error: `todo ${params.id} not found` } : data,
     },
     PUT: {
       action: "update",
@@ -121,5 +123,12 @@ export const ROUTE = {
         limit: { source: "queries", key: "limit" },
       },
     },
+  },
+};
+
+export const PRESET = {
+  GET: {
+    '5**': { error: "Internal server error", success: false },
+    404: { error: "Nothing here" },
   },
 };

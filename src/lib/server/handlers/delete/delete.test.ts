@@ -31,19 +31,31 @@ afterEach(() => {
 
 describe('deleteAction', () => {
 	it('removes the matching row and returns it', async () => {
-		const res = dispatch(deleteHandler, { params: { id: '1' }, queries: {}, body: null });
+		const res = dispatch(deleteHandler, {
+			method: 'DELETE',
+			path: '/todos/1',
+			params: { id: '1' },
+			queries: {},
+			body: null,
+		});
 		expect(res.status).toBe(200);
 		expect(await res.json()).toEqual({ id: 1, title: 'Todo 1', completed: false });
 
 		const missing = dispatch(
 			{ action: 'find', model: 'todos', where: { id: { source: 'params', key: 'id' } } },
-			{ params: { id: '1' }, queries: {}, body: null },
+			{ method: 'GET', path: '/todos/1', params: { id: '1' }, queries: {}, body: null },
 		);
 		expect(missing.status).toBe(404);
 	});
 
 	it('returns 404 when no row matches', async () => {
-		const res = dispatch(deleteHandler, { params: { id: '9' }, queries: {}, body: null });
+		const res = dispatch(deleteHandler, {
+			method: 'DELETE',
+			path: '/todos/9',
+			params: { id: '9' },
+			queries: {},
+			body: null,
+		});
 		expect(res.status).toBe(404);
 		expect(await res.json()).toEqual({ error: 'Not Found' });
 	});

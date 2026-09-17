@@ -82,6 +82,8 @@ export const ROUTE = {
 			where: {
 				id: { source: 'params', key: 'id', by: 'equal' },
 			},
+			response: ({ data, status, params }) =>
+				status === 404 ? { error: `todo ${params.id} not found` } : data,
 		},
 		PUT: {
 			action: 'update',
@@ -114,5 +116,25 @@ export const ROUTE = {
 				completed: (todo) => !todo.completed,
 			},
 		},
+	},
+	'/gone/:id': {
+		GET: {
+			action: 'find',
+			model: 'todos',
+			where: {
+				id: { source: 'params', key: 'id' },
+			},
+			response: ({ params }) =>
+				new Response(JSON.stringify({ id: params.id }), {
+					status: 410,
+					headers: { 'content-type': 'application/json', 'x-preset': 'gone' },
+				}),
+		},
+	},
+};
+
+export const PRESET = {
+	GET: {
+		404: { error: 'Nothing here' },
 	},
 };

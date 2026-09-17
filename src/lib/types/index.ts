@@ -52,3 +52,24 @@ export type RouteHandlerObject = {
 };
 
 export type RouteHandler = string | number | RouteHandlerObject;
+
+export type ResponseContext = {
+	data: unknown;
+	model: Record<string, Record<string, unknown>[]>;
+	status: number;
+	method: string;
+	path: string;
+	params: Record<string, string>;
+	queries: Record<string, string>;
+	body: unknown;
+};
+
+export type PresetContext = ResponseContext;
+
+export type RouteContext = ResponseContext & {
+	response: Response;
+};
+
+export type PresetLeaf = unknown | ((context: PresetContext) => unknown);
+
+export type PresetDefinition = Record<string, Record<string, PresetLeaf>>;
