@@ -18,7 +18,13 @@ const model: ModelDefinition = {
 	}),
 };
 
-const empty: DispatchContext = { params: {}, queries: {}, body: null };
+const empty: DispatchContext = {
+	method: 'GET',
+	path: '/todos',
+	params: {},
+	queries: {},
+	body: null,
+};
 
 afterEach(() => {
 	resetTables();
@@ -27,6 +33,8 @@ afterEach(() => {
 describe('resolveValue', () => {
 	it('reads params, queries, and body keys', () => {
 		const context: DispatchContext = {
+			method: 'GET',
+			path: '/todos/3',
 			params: { id: '3' },
 			queries: { q: 'Todo' },
 			body: { title: 'Hi' },
@@ -53,7 +61,13 @@ describe('toRouteFilters', () => {
 				completed: { source: 'queries', key: 'completed', by: 'equal' },
 				id: { source: 'params', key: 'id' },
 			},
-			{ params: { id: '1' }, queries: { q: 'odo', completed: 'false' }, body: null },
+			{
+				method: 'GET',
+				path: '/todos/1',
+				params: { id: '1' },
+				queries: { q: 'odo', completed: 'false' },
+				body: null,
+			},
 			'filter',
 		);
 		expect(filters).toEqual([

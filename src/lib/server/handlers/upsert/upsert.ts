@@ -1,6 +1,6 @@
 import { validate } from '$lib/server/model';
 import { projectRowScalar, requireTable } from '$lib/server/handlers/project';
-import { json, mapResponse, validationError } from '$lib/server/handlers/respond';
+import { json, validationError } from '$lib/server/handlers/respond/respond';
 import type { DispatchContext } from '$lib/server/handlers/sources/sources';
 import { toStore, upsert } from '$lib/server/table';
 import type { RouteHandlerObject } from '$lib/types';
@@ -13,5 +13,5 @@ export function upsertAction(handler: RouteHandlerObject, context: DispatchConte
 	if (!result.ok) return validationError(result.errors);
 
 	const row = upsert(table, result.data);
-	return mapResponse(handler, projectRowScalar(row, table));
+	return json(projectRowScalar(row, table));
 }

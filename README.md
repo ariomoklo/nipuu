@@ -9,7 +9,7 @@ npx nipuu ./mocks/index.mjs
 - Mock API: `http://localhost:4210`
 - Inspector: `http://localhost:4210/_nipuu`
 
-Unmatched method and path pairs return `{ "error": "Not Found" }` with status 404.
+Unmatched method and path pairs return `{ "error": "Not Found" }` with status 404. [PRESET](#preset) can override that body by method and status.
 
 ## Run
 
@@ -35,9 +35,10 @@ The config path is required.
 
 export const MODEL = { /* tables */ };
 export const ROUTE = { /* HTTP routes */ };
+export const PRESET = { /* optional: default responses by status */ };
 ```
 
-`.mjs` is always treated as ESM, so this works in an empty directory. A `.js` config also works if that file sits in a package with `"type": "module"`. If either export is missing, Nipuu exits on startup.
+`.mjs` is always treated as ESM, so this works in an empty directory. A `.js` config also works if that file sits in a package with `"type": "module"`. If `MODEL` or `ROUTE` is missing, Nipuu exits on startup. `PRESET` is optional.
 
 ### MODEL
 
@@ -187,7 +188,7 @@ update: {
 
 Omitted body keys are left unchanged.
 
-On CRUD actions, `response` is optional. `data` is the action result. `model` is the current store (plain rows, keyed by table name).
+On CRUD actions, `response` is optional. It runs after `PRESET` and receives the route context described below.
 
 ```js
 response: ({ data, model }) => ({
@@ -196,7 +197,66 @@ response: ({ data, model }) => ({
 })
 ```
 
-If you omit `response`, Nipuu returns the row or list as JSON.
+If you omit `response`, Nipuu keeps the action body (or the PRESET body when one matched). Return a `Response` instead of a plain value to control the status, headers, and body yourself. A plain return is JSON at the incoming status, so a 404 mapper can return `{ error: '…' }` without wrapping `Response`.
+
+```js
+response: ({ data }) =>
+  new Response(JSON.stringify(data), {
+    status: 201,
+    headers: { 'content-type': 'application/json', 'x-total': String(data.length) }
+  })
+```
+
+### Response context
+
+`PRESET` functions and ROUTE `response` functions share the same base fields. ROUTE also receives `response`.
+
+
+| Key        | Value                                                                 |
+| ---------- | --------------------------------------------------------------------- |
+| `data`     | The action result.                                                    |
+| `model`    | The current store: plain rows, keyed by table name.                   |
+| `status`   | The action status for PRESET; `response.status` after PRESET for ROUTE. |
+| `method`   | Request method.                                                       |
+| `path`     | Request path.                                                         |
+| `params`   | Path params.                                                          |
+| `queries`  | Query string.                                                         |
+| `body`     | Request body.                                                         |
+| `response` | The `Response` after PRESET. Only on ROUTE.                           |
+
+
+### PRESET
+
+`PRESET` is optional. It is a before-hook for the route mapper: after the action and `delay`, before `response()`. It matches **method then status**. Use it for a friendlier 404, a 5xx envelope, or a catch-all fallback. Path-specific bodies belong on the route's `response`.
+
+`'*'` is the wildcard for method. Status keys are exact (`404`) or globs (`"5**"`, `"*"`). An exact method beats `'*'`. An exact status beats a glob, and a more specific glob beats `'*'`.
+
+```js
+export const PRESET = {
+  '*': { '*': 'base default fallback', 404: { error: 'Nothing here' } },
+  GET: {
+    '5**': 'something went wrong',
+    404: ({ path, params }) => ({ error: `${path} not found`, params })
+  }
+}
+```
+
+The config loader reads only the optional `PRESET` export.
+
+A `*` / `*` leaf overrides every uncaught data-plane response (404, 200, 400, 500, unmatched, miss). Status stays the action status; only the body (or a returned `Response`) comes from the leaf. In the example above, `GET` 404 uses the function, `GET` 5xx uses `"5**"`, any other 404 uses `{ error: 'Nothing here' }`, and everything else falls through to `'base default fallback'`.
+
+A leaf is a static value or a function, exactly like a route handler's `response`. There is no options object, so a preset cannot carry `delay`; the matched route's own `delay` still applies. A function receives the preset context (no `response`) and may return a `Response`.
+
+
+| Leaf                  | Result                                                                     |
+| --------------------- | -------------------------------------------------------------------------- |
+| Object, array, `null` | JSON body, status from the action.                                         |
+| Other primitive       | `text/plain` body, status from the action.                                 |
+| Function              | Its return value is serialized the same way, unless it returns a `Response`. |
+| Function → `Response` | Used as-is: its own status, headers, and body win.                         |
+
+
+Resolution runs after the route action and after `delay`, on every data-plane response, then the route mapper runs. Never applies to the control plane.
 
 ## Inspector
 

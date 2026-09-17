@@ -1,5 +1,5 @@
 import { projectRowScalar, requireTable } from '$lib/server/handlers/project';
-import { json, mapResponse, notFound } from '$lib/server/handlers/respond';
+import { json, notFound } from '$lib/server/handlers/respond/respond';
 import { toRouteFilters, type DispatchContext } from '$lib/server/handlers/sources/sources';
 import { deleteRow } from '$lib/server/table';
 import type { RouteHandlerObject } from '$lib/types';
@@ -13,5 +13,5 @@ export function deleteAction(handler: RouteHandlerObject, context: DispatchConte
 
 	const removed = deleteRow(table, where);
 	if (!removed) return notFound();
-	return mapResponse(handler, projectRowScalar(removed, table));
+	return json(projectRowScalar(removed, table));
 }

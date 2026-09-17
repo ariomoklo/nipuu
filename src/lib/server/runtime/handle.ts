@@ -1,7 +1,9 @@
 import type { RequestEvent } from '@sveltejs/kit';
-import { dispatch, notFound } from '$lib/server/handlers';
+import { dispatch, notFound, type DispatchContext } from '$lib/server/handlers';
 import { waitDelay } from '$lib/server/handlers/delay/delay';
+import { mapResponse } from '$lib/server/handlers/respond/respond';
 import { appendLog } from '$lib/server/logs';
+import { applyPreset } from '$lib/server/preset';
 import { matchRoute } from '$lib/server/router';
 import { getConfig } from '$lib/server/runtime';
 import type { LogEntry, RouteHandler } from '$lib/types';
@@ -32,6 +34,20 @@ async function peekBody(response: Response): Promise<unknown> {
 	return raw;
 }
 
+function mapIfRoute(
+	handler: RouteHandler | undefined,
+	data: unknown,
+	context: DispatchContext,
+	response: Response,
+): Response {
+	if (handler === undefined) return response;
+	if (typeof handler === 'string' || typeof handler === 'number') return response;
+	if (typeof handler !== 'object' || handler === null) return response;
+	if (handler.action === 'static') return response;
+
+	return mapResponse(handler, data, context, response);
+}
+
 export async function handleRequest(event: RequestEvent): Promise<Response> {
 	const requestId = crypto.randomUUID();
 	const startedAt = Date.now();
@@ -44,20 +60,32 @@ export async function handleRequest(event: RequestEvent): Promise<Response> {
 	const queries = Object.fromEntries(event.url.searchParams.entries());
 	const requestHeaders = Object.fromEntries(event.request.headers.entries());
 	const requestBody = await readBody(event.request);
+	const context: DispatchContext = {
+		method,
+		path: pathname,
+		params,
+		queries,
+		body: requestBody,
+	};
 
 	const matched = matchRoute(getConfig().ROUTE, method, pathname);
+	let handler: RouteHandler | undefined;
 	let response: Response;
 
 	if (!matched) {
 		response = notFound();
 	} else {
 		Object.assign(params, matched.params);
-		const handler = matched.handler as RouteHandler;
-		response = dispatch(handler, { params, queries, body: requestBody });
+		handler = matched.handler as RouteHandler;
+		response = dispatch(handler, context);
 		await waitDelay(handler);
 	}
 
-	const responseBody = await peekBody(response);
+	const actionBody = await peekBody(response);
+	const afterPreset = await applyPreset(response, actionBody, context);
+	const finalResponse = mapIfRoute(handler, actionBody, context, afterPreset);
+	// later: MIDDLEWARE array, in index order, each seeing the route Response
+	const responseBody = finalResponse === response ? actionBody : await peekBody(finalResponse);
 	appendLog({
 		id: requestId,
 		requestId,
@@ -68,11 +96,11 @@ export async function handleRequest(event: RequestEvent): Promise<Response> {
 		queries,
 		requestHeaders,
 		requestBody,
-		status: response.status,
-		responseHeaders: Object.fromEntries(response.headers.entries()),
+		status: finalResponse.status,
+		responseHeaders: Object.fromEntries(finalResponse.headers.entries()),
 		responseBody,
 		duration: Date.now() - startedAt,
 	} satisfies LogEntry);
 
-	return response;
+	return finalResponse;
 }

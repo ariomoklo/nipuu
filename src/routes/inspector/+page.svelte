@@ -28,7 +28,7 @@
 </script>
 
 <svelte:head>
-	<title>Nipuu Inspector</title>
+	<title>nipuu: Inspector</title>
 </svelte:head>
 
 <h1 {...stylex.attrs(chrome.title)}>Requests</h1>

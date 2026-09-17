@@ -1,6 +1,6 @@
 import type { Row } from '$lib/server/model';
 import { projectRowScalar, requireTable } from '$lib/server/handlers/project';
-import { json, mapResponse } from '$lib/server/handlers/respond';
+import { json } from '$lib/server/handlers/respond/respond';
 import {
 	resolveValue,
 	toRouteFilters,
@@ -65,5 +65,5 @@ export function searchAction(handler: RouteHandlerObject, context: DispatchConte
 		sort && typeof sort === 'object' ? resolveValue(sort.orderBy, context) : undefined,
 	);
 	const page = paginate(sorted, handler, context).map((row) => projectRowScalar(row, table));
-	return mapResponse(handler, page);
+	return json(page);
 }

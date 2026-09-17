@@ -1,6 +1,6 @@
 import { validate, type Payload } from '$lib/server/model';
 import { projectRowScalar, requireTable } from '$lib/server/handlers/project';
-import { json, mapResponse, notFound, validationError } from '$lib/server/handlers/respond';
+import { json, notFound, validationError } from '$lib/server/handlers/respond/respond';
 import {
 	resolveFieldValue,
 	toRouteFilters,
@@ -51,5 +51,5 @@ export function updateAction(handler: RouteHandlerObject, context: DispatchConte
 	const patch = buildPatch(table, handler, context, projectRowScalar(found.row, table));
 	const updated = update(table, where, patch);
 	if (!updated) return notFound();
-	return mapResponse(handler, projectRowScalar(updated, table));
+	return json(projectRowScalar(updated, table));
 }

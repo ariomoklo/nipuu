@@ -4,12 +4,12 @@ Black-box HTTP scenarios for the Nipuu mock server. These are not colocated unit
 
 ## Directory
 
-| File                 | Role                                         |
-| -------------------- | -------------------------------------------- |
-| `config.mjs`         | Fixture `MODEL` + `ROUTE` loaded by the CLI  |
-| `client.ts`          | Start/stop the CLI and `fetch` helper        |
-| `mockserver.test.ts` | QA journeys (happy path and negatives)       |
-| `README.md`          | This file: flow, order, and scenario catalog |
+| File                 | Role                                                   |
+| -------------------- | ------------------------------------------------------ |
+| `config.mjs`         | Fixture `MODEL` + `ROUTE` + `PRESET` loaded by the CLI |
+| `client.ts`          | Start/stop the CLI and `fetch` helper                  |
+| `mockserver.test.ts` | QA journeys (happy path and negatives)                 |
+| `README.md`          | This file: flow, order, and scenario catalog           |
 
 Run:
 
@@ -50,8 +50,13 @@ Seed **2**. Models: `users` and `todos` (`todos.owner` relates to `users`). Rout
 - `GET /users` — search users
 - `GET /todos` — search todos (`q` include on title, `completed` equal)
 - `POST /todos` — upsert
-- `GET` / `PUT` / `DELETE /todos/:id` — find / update / delete
+- `GET` / `PUT` / `DELETE /todos/:id` — find / update / delete. GET miss uses a route `response` for `{ "error": "todo <id> not found" }`
 - `PUT /todos/:id/toggle` — flip `completed`
+- `GET /gone/:id` — find miss mapped to `410` with `x-preset: gone`
+
+Presets:
+
+- `GET / 404` — static `{ "error": "Nothing here" }`
 
 ## Scenarios
 
@@ -65,12 +70,19 @@ Seed **2**. Models: `users` and `todos` (`todos.owner` relates to `users`). Rout
 - Happy: `GET /todos` returns two seeded todos
 - Happy: `GET /todos/1` returns that row
 - Happy: `GET /todos?q=Todo%201` filters by title include
-- Negative: `GET /todos/99` is `404`
-- Negative: `GET /unknown` is `404`
+- Negative: `GET /todos/99` is `404` `{ "error": "todo 99 not found" }` from the route mapper
+- Negative: `GET /unknown` is `404` `{ "error": "Nothing here" }` from the GET 404 preset
 
 ### Scenario: delayed response
 
 - Happy: `GET` / `POST` / `PUT` / `PATCH` / `DELETE /slow` is `200` `slow` and takes at least 1500ms
+
+### Scenario: preset responses
+
+- Happy: `GET /nope` is `404` `{ "error": "Nothing here" }`
+- Happy: `GET /todos/404` uses the route mapper after the GET 404 preset
+- Negative: `POST /nope` is not covered by the `GET` preset and stays `{ "error": "Not Found" }`
+- Happy: `GET /gone/7` returns the route mapper's `Response`: `410`, `x-preset: gone`, `{ "id": "7" }`
 
 ### Journey: todo lifecycle
 
@@ -84,5 +96,5 @@ Runs last. Shares `ownerId` and `createdId` across steps.
 - Negative: `PUT /todos/:id` with `completed: "yes"` is `400`
 - Happy: `PUT /todos/:id/toggle` sets `completed` to `true`
 - Happy: `DELETE /todos/:id` returns the removed row
-- Negative: `GET /todos/:id` after delete is `404`
-- Negative: `DELETE /todos/:id` when already gone is `404`
+- Negative: `GET /todos/:id` after delete is `404` with the route mapper body
+- Negative: `DELETE /todos/:id` when already gone is `404` `{ "error": "Not Found" }`

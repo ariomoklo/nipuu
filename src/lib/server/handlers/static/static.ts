@@ -1,4 +1,4 @@
-import { json, serverError, text } from '$lib/server/handlers/respond';
+import { bodyResponse, serverError } from '$lib/server/handlers/respond/respond';
 import type { RouteHandlerObject } from '$lib/types';
 
 function isStaticResponse(value: unknown): boolean {
@@ -22,14 +22,5 @@ export function staticAction(handler: RouteHandlerObject): Response {
 		return serverError('Invalid static response');
 	}
 
-	if (
-		typeof value === 'string' ||
-		typeof value === 'number' ||
-		typeof value === 'boolean' ||
-		typeof value === 'bigint'
-	) {
-		return text(value);
-	}
-
-	return json(value);
+	return bodyResponse(value);
 }

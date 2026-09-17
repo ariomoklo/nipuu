@@ -1,5 +1,5 @@
 import { projectRowScalar, requireTable } from '$lib/server/handlers/project';
-import { json, mapResponse, notFound } from '$lib/server/handlers/respond';
+import { json, notFound } from '$lib/server/handlers/respond/respond';
 import { toRouteFilters, type DispatchContext } from '$lib/server/handlers/sources/sources';
 import { lookup } from '$lib/server/table';
 import type { RouteHandlerObject } from '$lib/types';
@@ -13,5 +13,5 @@ export function findAction(handler: RouteHandlerObject, context: DispatchContext
 
 	const found = lookup(table, 'find', where);
 	if (!found || Array.isArray(found)) return notFound();
-	return mapResponse(handler, projectRowScalar(found.row, table));
+	return json(projectRowScalar(found.row, table));
 }
