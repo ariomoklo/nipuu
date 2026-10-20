@@ -1,35 +1,51 @@
+import { Array, Option, pipe } from 'effect';
+
 type Segment = { type: 'static'; value: string } | { type: 'param'; name: string };
 
-function parsePattern(pattern: string): Segment[] {
-	if (pattern === '/') return [];
-	return pattern
-		.split('/')
-		.filter(Boolean)
-		.map((segment) =>
-			segment.startsWith(':')
-				? { type: 'param', name: segment.slice(1) }
-				: { type: 'static', value: segment },
-		);
+// A throw is absence. This lookup stays pure, so it does not need Effect.try.
+const decodeSegment = Option.liftThrowable(decodeURIComponent);
+
+function splitPath(path: string): string[] {
+	return path.split('/').filter(Boolean);
 }
 
-function matchPath(pattern: string, pathname: string): Record<string, string> | null {
-	const pathSegments = pathname === '/' ? [] : pathname.split('/').filter(Boolean);
-	const patternSegments = parsePattern(pattern);
+function parsePattern(pattern: string): Segment[] {
+	return splitPath(pattern).map((segment) =>
+		segment.startsWith(':')
+			? { type: 'param', name: segment.slice(1) }
+			: { type: 'static', value: segment },
+	);
+}
 
-	if (pathSegments.length !== patternSegments.length) return null;
-
-	const params: Record<string, string> = {};
-	for (let i = 0; i < patternSegments.length; i += 1) {
-		const expected = patternSegments[i];
-		const actual = pathSegments[i];
-		if (expected.type === 'static') {
-			if (expected.value !== actual) return null;
-		} else {
-			params[expected.name] = decodeURIComponent(actual);
-		}
+function matchSegment(segment: Segment, value: string): Option.Option<Record<string, string>> {
+	if (segment.type === 'static') {
+		return segment.value === value ? Option.some({}) : Option.none();
 	}
 
-	return params;
+	return Option.map(decodeSegment(value), (decoded) => ({ [segment.name]: decoded }));
+}
+
+function matchPath(pattern: string, pathname: string): Option.Option<Record<string, string>> {
+	const patternSegments = parsePattern(pattern);
+	const pathSegments = splitPath(pathname);
+
+	if (patternSegments.length !== pathSegments.length) return Option.none();
+
+	return Array.reduce(
+		Array.zip(patternSegments, pathSegments),
+		Option.some<Record<string, string>>({}),
+		(params, [segment, value]) =>
+			Option.zipWith(params, matchSegment(segment, value), (accumulated, entry) => ({
+				...accumulated,
+				...entry,
+			})),
+	);
+}
+
+function methodHandler(methods: Record<string, unknown>, method: string): Option.Option<unknown> {
+	if (!Object.hasOwn(methods, method)) return Option.none();
+
+	return Option.some(methods[method]);
 }
 
 export type MatchResult = {
@@ -39,22 +55,28 @@ export type MatchResult = {
 	params: Record<string, string>;
 };
 
+export function findRoute(
+	routes: Record<string, Record<string, unknown>>,
+	method: string,
+	pathname: string,
+): Option.Option<MatchResult> {
+	return Array.findFirst(Object.entries(routes), ([pattern, methods]) =>
+		pipe(
+			matchPath(pattern, pathname),
+			Option.flatMap((params) =>
+				pipe(
+					methodHandler(methods, method),
+					Option.map((handler) => ({ pattern, method, handler, params })),
+				),
+			),
+		),
+	);
+}
+
 export function matchRoute(
 	routes: Record<string, Record<string, unknown>>,
 	method: string,
 	pathname: string,
 ): MatchResult | null {
-	for (const [pattern, methods] of Object.entries(routes)) {
-		const params = matchPath(pattern, pathname);
-		if (!params) continue;
-		if (!Object.hasOwn(methods, method)) continue;
-		return {
-			pattern,
-			method,
-			handler: methods[method],
-			params,
-		};
-	}
-
-	return null;
+	return Option.getOrNull(findRoute(routes, method, pathname));
 }
