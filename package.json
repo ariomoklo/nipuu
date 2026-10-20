@@ -31,6 +31,7 @@
 		"format:check": "oxfmt --check src vite.config.ts vitest.config.ts package.json .github"
 	},
 	"dependencies": {
+		"@effect/platform-node": "^4.0.3",
 		"@fontsource-variable/bricolage-grotesque": "^5.3.0",
 		"@fontsource/ibm-plex-mono": "^5.3.0",
 		"@fontsource/source-sans-3": "^5.3.0",
@@ -39,11 +40,14 @@
 		"@sveltejs/adapter-auto": "^7.0.1",
 		"@sveltejs/kit": "^2.63.0",
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
+		"effect": "^4.0.3",
 		"shiki": "^4.4.3",
 		"svelte": "^5.56.1",
 		"vite": "^8.0.16"
 	},
 	"devDependencies": {
+		"@effect/language-service": "^0.87.4",
+		"@effect/vitest": "^4.0.3",
 		"@types/node": "^26.4.1",
 		"@vitest/coverage-v8": "^5.0.1",
 		"husky": "^9.1.7",
