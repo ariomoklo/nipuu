@@ -1,13 +1,16 @@
-import { validate, type Payload } from '$lib/server/model';
-import { projectRowScalar, requireTable } from '$lib/server/handlers/project';
-import { json, notFound, validationError } from '$lib/server/handlers/respond/respond';
+import type { Payload } from '$lib/server/model';
+import { ValidationFailed, validateEffect } from '$lib/server/model/validate/validate';
+import { projectRowScalar } from '$lib/server/handlers/project';
+import type { ActionBody } from '$lib/server/handlers/errors';
 import {
 	resolveFieldValue,
 	toRouteFilters,
 	type DispatchContext,
 } from '$lib/server/handlers/sources/sources';
-import { lookup, toStore, update, type Table } from '$lib/server/table';
+import { lookup, type Table } from '$lib/server/table';
+import { RowNotFound, TableNotFound, TableStore } from '$lib/server/table/store/service';
 import type { RouteHandlerObject } from '$lib/types';
+import { Effect } from 'effect';
 
 function buildPatch(
 	table: Table,
@@ -34,22 +37,31 @@ function buildPatch(
 	return patch;
 }
 
-export function updateAction(handler: RouteHandlerObject, context: DispatchContext): Response {
-	const table = requireTable(handler);
-	if (!table) return json({ error: 'Unknown table' }, 400);
+export function updateEffect(
+	handler: RouteHandlerObject,
+	context: DispatchContext,
+): Effect.Effect<ActionBody, TableNotFound | RowNotFound | ValidationFailed, TableStore> {
+	return Effect.gen(function* () {
+		if (typeof handler.model !== 'string') return yield* new TableNotFound({ table: '' });
 
-	const where = toRouteFilters(table, handler.where, context, 'where');
-	if (where === null) return notFound();
+		const tables = yield* TableStore;
+		const table = yield* tables.get(handler.model);
+		const where = toRouteFilters(table, handler.where, context, 'where');
+		if (where === null)
+			return yield* new RowNotFound({ table: table.schema.name, where: handler.where });
 
-	const payload = context.body == null ? {} : context.body;
-	const result = validate([table.schema], toStore(), table.schema.name, payload, { partial: true });
-	if (!result.ok) return validationError(result.errors);
+		const payload = context.body == null ? {} : context.body;
+		const store = yield* tables.snapshot;
+		yield* validateEffect([table.schema], store, table.schema.name, payload, {
+			partial: true,
+		});
+		const found = lookup(table, 'find', where);
+		if (!found || Array.isArray(found)) {
+			return yield* new RowNotFound({ table: table.schema.name, where });
+		}
 
-	const found = lookup(table, 'find', where);
-	if (!found || Array.isArray(found)) return notFound();
-
-	const patch = buildPatch(table, handler, context, projectRowScalar(found.row, table));
-	const updated = update(table, where, patch);
-	if (!updated) return notFound();
-	return json(projectRowScalar(updated, table));
+		const patch = buildPatch(table, handler, context, projectRowScalar(found.row, table));
+		const updated = yield* tables.update(table.schema.name, where, patch);
+		return { _tag: 'Json', value: projectRowScalar(updated, table) };
+	});
 }

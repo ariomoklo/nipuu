@@ -1,39 +1,45 @@
-import type { RequestEvent } from '@sveltejs/kit';
-import { dispatch, notFound, type DispatchContext } from '$lib/server/handlers';
-import { waitDelay } from '$lib/server/handlers/delay/delay';
-import { mapResponse } from '$lib/server/handlers/respond/respond';
-import { appendLog } from '$lib/server/logs';
-import { runPlugins } from '$lib/server/plugin';
-import { applyPreset } from '$lib/server/preset';
+import { NipuuConfig } from '$lib/server/app/services';
+import { delayFor } from '$lib/server/handlers/delay/delay';
+import { toResponse } from '$lib/server/handlers/outcome';
+import { mapResponse, notFound, serverError } from '$lib/server/handlers/respond/respond';
+import type { DispatchContext } from '$lib/server/handlers/sources/sources';
+import { LogStore } from '$lib/server/logs/service';
+import { runPluginsEffect } from '$lib/server/plugin';
+import { applyPresetEffect } from '$lib/server/preset';
 import { matchRoute } from '$lib/server/router';
-import { getConfig } from '$lib/server/runtime';
 import type { LogEntry, RouteHandler } from '$lib/types';
+import { Clock, Effect, Exit } from 'effect';
 
-async function readBody(request: Request): Promise<unknown> {
-	const raw = await request.text();
-	if (!raw) return null;
-	try {
-		return JSON.parse(raw);
-	} catch {
-		return raw;
-	}
-}
+const readBody = Effect.fn('nipuu.readBody')(function* (request: Request) {
+	const raw = yield* Effect.tryPromise({
+		try: () => request.text(),
+		catch: () => new Error('body'),
+	}).pipe(Effect.orElseSucceed(() => ''));
 
-async function peekBody(response: Response): Promise<unknown> {
-	const clone = response.clone();
-	const raw = await clone.text();
 	if (!raw) return null;
+
+	return yield* Effect.try({
+		try: () => JSON.parse(raw) as unknown,
+		catch: () => new Error('json'),
+	}).pipe(Effect.orElseSucceed(() => raw));
+});
+
+const peekBody = Effect.fn('nipuu.peekBody')(function* (response: Response) {
+	const raw = yield* Effect.tryPromise({
+		try: () => response.clone().text(),
+		catch: () => new Error('peek'),
+	}).pipe(Effect.orElseSucceed(() => ''));
+
+	if (!raw) return null;
+
 	const contentType = response.headers.get('content-type') ?? '';
-	if (contentType.includes('application/json')) {
-		try {
-			return JSON.parse(raw);
-		} catch {
-			return raw;
-		}
-	}
+	if (!contentType.includes('application/json')) return raw;
 
-	return raw;
-}
+	return yield* Effect.try({
+		try: () => JSON.parse(raw) as unknown,
+		catch: () => new Error('json'),
+	}).pipe(Effect.orElseSucceed(() => raw));
+});
 
 function mapIfRoute(
 	handler: RouteHandler | undefined,
@@ -49,59 +55,101 @@ function mapIfRoute(
 	return mapResponse(handler, data, context, response);
 }
 
-export async function handleRequest(event: RequestEvent): Promise<Response> {
-	const requestId = crypto.randomUUID();
-	const startedAt = Date.now();
-	event.locals.requestId = requestId;
-	event.locals.startedAt = startedAt;
+const runAction = Effect.fn('nipuu.runAction')(function* (
+	handler: RouteHandler,
+	context: DispatchContext,
+) {
+	const response = yield* toResponse(handler, context);
+	yield* delayFor(handler);
+	return response;
+});
 
-	const method = event.request.method;
-	const pathname = event.url.pathname;
+export const handleRequestEffect = Effect.fn('nipuu.handleRequest')(function* (
+	request: Request,
+	url: URL,
+) {
+	const requestId = yield* Effect.sync(() => crypto.randomUUID());
+	const startedAt = yield* Clock.currentTimeMillis;
+
+	const method = request.method;
+	const pathname = url.pathname;
+	const queries = Object.fromEntries(url.searchParams.entries());
+	const requestHeaders = Object.fromEntries(request.headers.entries());
 	const params: Record<string, string> = {};
-	const queries = Object.fromEntries(event.url.searchParams.entries());
-	const requestHeaders = Object.fromEntries(event.request.headers.entries());
-	const requestBody = await readBody(event.request);
-	const context: DispatchContext = {
-		method,
-		path: pathname,
-		params,
-		queries,
-		body: requestBody,
+	const bag = {
+		requestBody: null as unknown,
+		responseBody: null as unknown,
+		status: 500,
+		responseHeaders: {} as Record<string, string>,
 	};
 
-	const matched = matchRoute(getConfig().ROUTE, method, pathname);
-	let handler: RouteHandler | undefined;
-	let response: Response;
+	const remember = (response: Response, body: unknown) => {
+		bag.status = response.status;
+		bag.responseHeaders = Object.fromEntries(response.headers.entries());
+		bag.responseBody = body;
+	};
 
-	if (!matched) {
-		response = notFound();
-	} else {
-		Object.assign(params, matched.params);
-		handler = matched.handler as RouteHandler;
-		response = dispatch(handler, context);
-		await waitDelay(handler);
-	}
+	const work = Effect.gen(function* () {
+		yield* Effect.log('request');
+		const requestBody = yield* readBody(request);
+		bag.requestBody = requestBody;
+		const context: DispatchContext = { method, path: pathname, params, queries, body: requestBody };
+		const config = yield* NipuuConfig;
+		const matched = matchRoute(config.ROUTE, method, pathname);
 
-	const actionBody = await peekBody(response);
-	const afterPreset = await applyPreset(response, actionBody, context);
-	const mapped = mapIfRoute(handler, actionBody, context, afterPreset);
-	const finalResponse = await runPlugins(mapped, context);
-	const responseBody = finalResponse === response ? actionBody : await peekBody(finalResponse);
-	appendLog({
-		id: requestId,
-		requestId,
-		at: new Date(startedAt).toISOString(),
-		method,
-		path: pathname,
-		params,
-		queries,
-		requestHeaders,
-		requestBody,
-		status: finalResponse.status,
-		responseHeaders: Object.fromEntries(finalResponse.headers.entries()),
-		responseBody,
-		duration: Date.now() - startedAt,
-	} satisfies LogEntry);
+		let handler: RouteHandler | undefined;
+		let response: Response;
 
-	return finalResponse;
-}
+		if (!matched) {
+			response = notFound();
+		} else {
+			Object.assign(params, matched.params);
+			handler = matched.handler as RouteHandler;
+			response = yield* runAction(handler, context);
+		}
+
+		const actionBody = yield* peekBody(response);
+		const afterPreset = yield* applyPresetEffect(config.PRESET, response, actionBody, context).pipe(
+			Effect.catchTag('UserCodeFailed', () => Effect.succeed(serverError('Preset failed'))),
+		);
+		const mapped = yield* Effect.try({
+			try: () => mapIfRoute(handler, actionBody, context, afterPreset),
+			catch: (cause) => cause,
+		}).pipe(Effect.tapError((cause) => Effect.logError('response mapper failed', cause)));
+		const finalResponse = yield* runPluginsEffect(config.PLUGIN, mapped, context).pipe(
+			Effect.catchTag('InvalidPlugin', () => Effect.succeed(serverError('Invalid plugin'))),
+			Effect.catchTag('UserCodeFailed', () => Effect.succeed(serverError('Plugin failed'))),
+		);
+		const responseBody = finalResponse === response ? actionBody : yield* peekBody(finalResponse);
+		remember(finalResponse, responseBody);
+		return finalResponse;
+	}).pipe(
+		Effect.annotateLogs({ requestId, method, path: pathname }),
+		Effect.onExit((exit) =>
+			Effect.gen(function* () {
+				const ended = yield* Clock.currentTimeMillis;
+				const status = Exit.isSuccess(exit) ? bag.status : 500;
+				const logs = yield* LogStore;
+				const entry: LogEntry = {
+					id: requestId,
+					requestId,
+					at: new Date(startedAt).toISOString(),
+					method,
+					path: pathname,
+					params,
+					queries,
+					requestHeaders,
+					requestBody: bag.requestBody,
+					status,
+					responseHeaders: bag.responseHeaders,
+					responseBody: bag.responseBody,
+					duration: ended - startedAt,
+				};
+				yield* logs.append(entry);
+			}).pipe(Effect.ignoreCause({ log: false })),
+		),
+		Effect.catchCause(() => Effect.succeed(serverError('Invalid response'))),
+	);
+
+	return yield* work;
+});

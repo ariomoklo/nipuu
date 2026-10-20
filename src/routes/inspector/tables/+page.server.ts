@@ -1,11 +1,16 @@
-import { getSchemas, initRuntime } from '$lib/server/runtime';
+import { ModelSchemas } from '$lib/server/app/services';
+import { runAppSync } from '$lib/server/effect/runtime';
 import { getTable } from '$lib/server/table';
+import { Effect } from 'effect';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	await initRuntime();
-
-	const schemas = getSchemas();
+	const schemas = runAppSync(
+		Effect.gen(function* () {
+			const models = yield* ModelSchemas;
+			return models.schemas;
+		}),
+	);
 	return {
 		tables: schemas.map((schema) => {
 			const relatedModels = new Set<string>();

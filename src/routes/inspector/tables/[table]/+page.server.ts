@@ -1,6 +1,5 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { INSPECTOR_URL } from '$lib/inspector';
-import { initRuntime } from '$lib/server/runtime';
 import {
 	deleteRow,
 	getTable,
@@ -15,7 +14,6 @@ import {
 import type { Actions, PageServerLoad } from './$types';
 
 async function requireTable(name: string): Promise<Table> {
-	await initRuntime();
 	const table = getTable(name);
 	if (!table) error(404, `Unknown table: ${name}`);
 	return table;

@@ -1,113 +1,32 @@
 #!/usr/bin/env node
-import { existsSync } from 'node:fs';
-import path from 'node:path';
+import { createServer as createNodeServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
-
-const USAGE = 'Usage: nipuu <config-file> [--port 4210] [--seed 10]';
-const DEFAULT_PORT = 4210;
-const DEFAULT_SEED = 10;
-
-/**
- * @param {string[]} argv
- */
-function parseArgs(argv) {
-	/** @type {string | undefined} */
-	let config;
-	let port = DEFAULT_PORT;
-	let seed = DEFAULT_SEED;
-
-	for (let i = 0; i < argv.length; i += 1) {
-		const arg = argv[i];
-
-		if (arg === '--help' || arg === '-h') {
-			console.log(USAGE);
-			process.exit(0);
-		}
-
-		if (arg === '--port') {
-			const value = argv[++i];
-			const parsed = Number(value);
-			if (!value || !Number.isInteger(parsed) || parsed <= 0) {
-				console.error(USAGE);
-				process.exit(1);
-			}
-
-			port = parsed;
-			continue;
-		}
-
-		if (arg === '--seed') {
-			const value = argv[++i];
-			const parsed = Number(value);
-			if (!value || !Number.isInteger(parsed) || parsed < 0) {
-				console.error(USAGE);
-				process.exit(1);
-			}
-
-			seed = parsed;
-			continue;
-		}
-
-		if (arg.startsWith('-')) {
-			console.error(USAGE);
-			process.exit(1);
-		}
-
-		if (config) {
-			console.error(USAGE);
-			process.exit(1);
-		}
-
-		config = arg;
-	}
-
-	if (!config) {
-		console.error(USAGE);
-		process.exit(1);
-	}
-
-	return { config, port, seed };
-}
-
-const { config, port, seed } = parseArgs(process.argv.slice(2));
-const configPath = path.resolve(process.cwd(), config);
-
-if (!existsSync(configPath)) {
-	console.error(`Config file not found: ${configPath}`);
-	console.error(USAGE);
-	process.exit(1);
-}
-
-process.env.NIPUU_CONFIG = configPath;
-process.env.NIPUU_PORT = String(port);
-process.env.NIPUU_SEED = String(seed);
+import path from 'node:path';
 
 const packageRoot = path.join(fileURLToPath(import.meta.url), '..', '..');
+const cwd = process.cwd();
 
 // SvelteKit overrides Vite's `root` with the current directory, so run from the package root.
 process.chdir(packageRoot);
 
-const server = await createServer({
+const nodeServer = createNodeServer();
+const vite = await createServer({
 	root: packageRoot,
 	configFile: path.join(packageRoot, 'vite.config.ts'),
+	appType: 'custom',
 	server: {
-		port,
-		strictPort: true,
+		middlewareMode: true,
+		hmr: { server: nodeServer },
 	},
 });
 
-await server.listen();
-
 try {
-	const runtime = await server.ssrLoadModule('/src/lib/server/runtime/index.ts');
-	await runtime.initRuntime();
+	const program = await vite.ssrLoadModule('/src/lib/server/cli/main.ts');
+	await program.main({ argv: process.argv.slice(2), cwd, vite, server: nodeServer });
 } catch (error) {
 	console.error(error);
-	await server.close();
+	await vite.close();
+	nodeServer.close();
 	process.exit(1);
 }
-
-console.log(`\nnipuu · config{ ${configPath} } · seed{ ${seed} }`);
-console.log(`nipuu available at:\n`);
-server.printUrls();

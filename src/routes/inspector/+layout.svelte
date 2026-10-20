@@ -7,12 +7,13 @@
 
 	let { children } = $props();
 
+	const pathname = $derived(String(page.url.pathname));
 	const logsCurrent = $derived(
-		page.url.pathname === INSPECTOR_URL ||
-			page.url.pathname === `${INSPECTOR_URL}/` ||
-			page.url.pathname.startsWith(`${INSPECTOR_URL}/requests`),
+		pathname === INSPECTOR_URL ||
+			pathname === `${INSPECTOR_URL}/` ||
+			pathname.startsWith(`${INSPECTOR_URL}/requests`),
 	);
-	const tablesCurrent = $derived(page.url.pathname.startsWith(`${INSPECTOR_URL}/tables`));
+	const tablesCurrent = $derived(pathname.startsWith(`${INSPECTOR_URL}/tables`));
 </script>
 
 <div {...stylex.attrs(chrome.frame)}>

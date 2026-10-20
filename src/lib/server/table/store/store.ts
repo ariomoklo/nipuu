@@ -1,6 +1,11 @@
 import type { FieldSchema, Payload, Row, Schema } from '$lib/server/model/types';
 import { filter, toFilters, type FilterSchema } from '$lib/server/table/filter/filter';
-import { broadcast, type Table } from '$lib/server/table/lifecycle';
+import { readHeldTables } from '$lib/server/table/store/holder';
+import {
+	broadcast,
+	createTable as openLifecycleTable,
+	type Table,
+} from '$lib/server/table/lifecycle';
 import { TABLE_PAGE_MAX } from '$lib/server/table/query/parse';
 import {
 	createFieldItem,
@@ -9,12 +14,6 @@ import {
 	omitRow,
 	projectRow,
 } from '$lib/server/table/row';
-
-const TABLES_KEY = Symbol.for('nipuu.tables');
-
-type GlobalTables = typeof globalThis & {
-	[TABLES_KEY]?: Map<string, Table>;
-};
 
 function matches(table: Table, row: Row, cond: FilterSchema[]) {
 	if (cond.length === 0) return true;
@@ -28,8 +27,12 @@ function matches(table: Table, row: Row, cond: FilterSchema[]) {
 	return true;
 }
 
-function relationFromScalar(field: FieldSchema, value: unknown) {
-	const related = getTable(field.rel!.table);
+function relationFromScalar(
+	field: FieldSchema,
+	value: unknown,
+	tables: Map<string, Table> = getTables(),
+) {
+	const related = tables.get(field.rel!.table);
 	const join = field.rel!.field;
 	const sourceIndex = related
 		? related.rows.findIndex((source) => filterValue(source[join], undefined) === value)
@@ -44,7 +47,7 @@ function relationFromScalar(field: FieldSchema, value: unknown) {
 	};
 }
 
-function buildRow(table: Table, payload: Payload): Row {
+function buildRow(table: Table, payload: Payload, tables: Map<string, Table>): Row {
 	const row: Row = {};
 	for (const field of Object.values(table.schema.fields)) {
 		if (!(field.name in payload)) continue;
@@ -56,7 +59,7 @@ function buildRow(table: Table, payload: Payload): Row {
 
 		row[field.name] = createFieldItem(
 			`${table.schema.name}.${field.name}`,
-			field.rel ? relationFromScalar(field, raw) : raw,
+			field.rel ? relationFromScalar(field, raw, tables) : raw,
 			Boolean(field.rel),
 		);
 	}
@@ -64,7 +67,7 @@ function buildRow(table: Table, payload: Payload): Row {
 	return row;
 }
 
-function applyPatch(table: Table, row: Row, patch: Payload) {
+function applyPatch(table: Table, row: Row, patch: Payload, tables: Map<string, Table>) {
 	for (const [key, value] of Object.entries(patch)) {
 		const field = table.schema.fields[key];
 		if (!field) continue;
@@ -76,7 +79,7 @@ function applyPatch(table: Table, row: Row, patch: Payload) {
 		if (field.rel) {
 			row[key] = createFieldItem(
 				`${table.schema.name}.${field.name}`,
-				relationFromScalar(field, value),
+				relationFromScalar(field, value, tables),
 				true,
 			);
 			continue;
@@ -113,9 +116,14 @@ function fillMissingIds(table: Table, row: Row) {
 	}
 }
 
-function generateFieldValue(table: Table, field: FieldSchema, index: number) {
+function generateFieldValue(
+	table: Table,
+	field: FieldSchema,
+	index: number,
+	tables: Map<string, Table>,
+) {
 	if (field.rel) {
-		const related = getTable(field.rel.table);
+		const related = tables.get(field.rel.table);
 		if (!related) {
 			throw new Error(
 				`Cannot seed ${field.name}: table with "${field.rel.table}" name, does not exist`,
@@ -139,9 +147,7 @@ function generateFieldValue(table: Table, field: FieldSchema, index: number) {
 }
 
 export function getTables(): Map<string, Table> {
-	const global = globalThis as GlobalTables;
-	if (!global[TABLES_KEY]) global[TABLES_KEY] = new Map();
-	return global[TABLES_KEY];
+	return readHeldTables();
 }
 
 export function getTable(name: string): Table | undefined {
@@ -149,18 +155,7 @@ export function getTable(name: string): Table | undefined {
 }
 
 export function createTable(schema: Schema, seedCount: number): Table {
-	return {
-		schema,
-		seedCount,
-		rows: [],
-		pending: new Set(),
-		lifecycles: {
-			'after.seed': new Set(),
-			update: new Set(),
-			upsert: new Set(),
-		},
-		destroyRef: new Set(),
-	};
+	return openLifecycleTable(schema, seedCount);
 }
 
 export function lookup(table: Table, type: 'find' | 'filter', cond: FilterSchema[]) {
@@ -194,26 +189,34 @@ export function select(table: Table, filters: FilterSchema[] = []): Payload[] {
 	return found.slice(0, TABLE_PAGE_MAX).map(projectRow);
 }
 
-export function insert(table: Table, payload: Payload): Row {
-	const row = buildRow(table, payload);
+export function insert(
+	table: Table,
+	payload: Payload,
+	tables: Map<string, Table> = getTables(),
+): Row {
+	const row = buildRow(table, payload, tables);
 	fillMissingIds(table, row);
 	table.rows.push(row);
 	return row;
 }
 
-export function upsert(table: Table, payload: Payload): Row {
+export function upsert(
+	table: Table,
+	payload: Payload,
+	tables: Map<string, Table> = getTables(),
+): Row {
 	const availableID = detectID(table, payload);
 	if (Object.keys(availableID).length > 0) {
 		const found = lookup(table, 'find', toFilters(availableID));
 		if (found && !Array.isArray(found)) {
-			applyPatch(table, found.row, payload);
+			applyPatch(table, found.row, payload, tables);
 			table.rows[found.index] = found.row;
 			void broadcast(table, 'upsert', found.row, found.index);
 			return found.row;
 		}
 	}
 
-	const row = insert(table, payload);
+	const row = insert(table, payload, tables);
 	void broadcast(table, 'upsert', row, table.rows.length - 1);
 	return row;
 }
@@ -222,11 +225,12 @@ export function update(
 	table: Table,
 	cond: Record<string, unknown> | FilterSchema[],
 	patch: Payload,
+	tables: Map<string, Table> = getTables(),
 ): Row | undefined {
 	const found = lookup(table, 'find', toFilters(cond));
 	if (!found || Array.isArray(found)) return undefined;
 
-	applyPatch(table, found.row, patch);
+	applyPatch(table, found.row, patch, tables);
 	table.rows[found.index] = found.row;
 	void broadcast(table, 'update', found.row, found.index);
 	return found.row;
@@ -242,14 +246,14 @@ export function deleteRow(
 	return found.row;
 }
 
-export function seed(table: Table) {
+export function seed(table: Table, tables: Map<string, Table> = getTables()) {
 	table.rows = [];
 	for (let index = 0; index < table.seedCount; index++) {
 		const row: Row = {};
 		for (const field of Object.values(table.schema.fields)) {
 			row[field.name] = createFieldItem(
 				`${table.schema.name}.${field.name}`,
-				generateFieldValue(table, field, index),
+				generateFieldValue(table, field, index, tables),
 				Boolean(field.rel),
 			);
 		}

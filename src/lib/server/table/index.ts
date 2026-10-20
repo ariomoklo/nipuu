@@ -1,35 +1,12 @@
+import '$lib/server/effect/runtime';
 import type { Schema, Store } from '$lib/server/model/types';
 import { destroy, flush } from '$lib/server/table/lifecycle';
-import { sortByForeignKey } from '$lib/server/table/order/order';
-import { bindRelations, hydrateRelations } from '$lib/server/table/relations/relations';
-import { addSchema, clearSchemas } from '$lib/server/table/schema';
-import { createTable, getTable, getTables, seed } from '$lib/server/table/store/store';
-
-function registerSchemas(tables: Schema[]) {
-	for (const table of tables) {
-		for (const field of Object.values(table.fields)) {
-			addSchema(`${table.name}.${field.name}`, field);
-		}
-	}
-}
+import { loadTables } from '$lib/server/table/load';
+import { clearSchemas } from '$lib/server/table/schema';
+import { getTable, getTables } from '$lib/server/table/store/store';
 
 export function createTables(schemas: Schema[], seedCount: number) {
-	resetTables();
-	registerSchemas(schemas);
-
-	const tables = getTables();
-	const sorted = sortByForeignKey(schemas);
-	for (const schema of sorted) {
-		const table = createTable(schema, seedCount);
-		tables.set(schema.name, table);
-		seed(table);
-	}
-
-	for (const schema of sorted) {
-		const table = tables.get(schema.name)!;
-		bindRelations(table, tables);
-		hydrateRelations(table, tables);
-	}
+	loadTables(getTables(), schemas, seedCount);
 }
 
 export function resetTables() {

@@ -1,13 +1,15 @@
 import type { Row } from '$lib/server/model';
-import { projectRowScalar, requireTable } from '$lib/server/handlers/project';
-import { json } from '$lib/server/handlers/respond/respond';
+import { projectRowScalar } from '$lib/server/handlers/project';
+import type { ActionBody } from '$lib/server/handlers/errors';
 import {
 	resolveValue,
 	toRouteFilters,
 	type DispatchContext,
 } from '$lib/server/handlers/sources/sources';
 import { lookup, type Table } from '$lib/server/table';
+import { TableNotFound, TableStore } from '$lib/server/table/store/service';
 import type { RouteHandlerObject } from '$lib/types';
+import { Effect } from 'effect';
 
 function parseIndex(raw: unknown): number | undefined {
 	if (raw === undefined || raw === null || raw === '') return undefined;
@@ -47,23 +49,29 @@ function paginate(rows: Row[], handler: RouteHandlerObject, context: DispatchCon
 	return sliced.slice(0, limit);
 }
 
-export function searchAction(handler: RouteHandlerObject, context: DispatchContext): Response {
-	const table = requireTable(handler);
-	if (!table) return json({ error: 'Unknown table' }, 400);
+export function searchEffect(
+	handler: RouteHandlerObject,
+	context: DispatchContext,
+): Effect.Effect<ActionBody, TableNotFound, TableStore> {
+	return Effect.gen(function* () {
+		if (typeof handler.model !== 'string') return yield* new TableNotFound({ table: '' });
 
-	const where = toRouteFilters(table, handler.where, context, 'where');
-	if (where === null) return json([]);
+		const tables = yield* TableStore;
+		const table = yield* tables.get(handler.model);
+		const where = toRouteFilters(table, handler.where, context, 'where');
+		if (where === null) return { _tag: 'Json', value: [] };
 
-	const filter = toRouteFilters(table, handler.filter, context, 'filter') ?? [];
-	const found = lookup(table, 'filter', [...where, ...filter]);
-	const matched = Array.isArray(found) ? found : [];
-	const sort = handler.sort;
-	const sorted = sortRows(
-		matched,
-		table,
-		sort && typeof sort === 'object' ? resolveValue(sort.sortBy, context) : undefined,
-		sort && typeof sort === 'object' ? resolveValue(sort.orderBy, context) : undefined,
-	);
-	const page = paginate(sorted, handler, context).map((row) => projectRowScalar(row, table));
-	return json(page);
+		const filter = toRouteFilters(table, handler.filter, context, 'filter') ?? [];
+		const found = lookup(table, 'filter', [...where, ...filter]);
+		const matched = Array.isArray(found) ? found : [];
+		const sort = handler.sort;
+		const sorted = sortRows(
+			matched,
+			table,
+			sort && typeof sort === 'object' ? resolveValue(sort.sortBy, context) : undefined,
+			sort && typeof sort === 'object' ? resolveValue(sort.orderBy, context) : undefined,
+		);
+		const page = paginate(sorted, handler, context).map((row) => projectRowScalar(row, table));
+		return { _tag: 'Json', value: page };
+	});
 }

@@ -1,4 +1,3 @@
-import { runAppPromise } from '$lib/server/effect/runtime';
 import type { RouteHandler } from '$lib/types';
 import { Duration, Effect } from 'effect';
 
@@ -14,8 +13,4 @@ function delayDuration(handler: RouteHandler): Duration.Duration {
 
 export function delayFor(handler: RouteHandler): Effect.Effect<void> {
 	return Effect.sleep(delayDuration(handler));
-}
-
-export function waitDelay(handler: RouteHandler): Promise<void> {
-	return runAppPromise(delayFor(handler));
 }

@@ -1,6 +1,7 @@
 import type { FieldSchema, Row, Schema } from '$lib/server/model/types';
-import { on, trackDestroy, type Table } from '$lib/server/table/lifecycle';
+import { subscribe, type Table, type TableEvent } from '$lib/server/table/lifecycle';
 import { isRelationValue, omitRow, projectField } from '$lib/server/table/row';
+import { Effect, Scope } from 'effect';
 import type { TableRelationOption } from '$lib/types/table';
 
 const RELATION_OPTION_MAX = 100;
@@ -16,12 +17,13 @@ export function bindRelations(table: Table, tables: Map<string, Table>) {
 			);
 		}
 
-		const sync = (sourceRow: Row, sourceIndex: number) => {
-			syncRelation(table, field, sourceRow, sourceIndex);
-		};
+		const sync = (event: TableEvent) =>
+			Effect.sync(() => {
+				if (event._tag !== 'Updated' && event._tag !== 'Upserted') return;
+				syncRelation(table, field, event.row, event.index);
+			});
 
-		trackDestroy(table, on(related, 'update', sync));
-		trackDestroy(table, on(related, 'upsert', sync));
+		Effect.runSync(subscribe(related, sync).pipe(Effect.provideService(Scope.Scope, table.scope)));
 	}
 }
 

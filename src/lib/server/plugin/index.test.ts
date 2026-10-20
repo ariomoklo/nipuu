@@ -1,15 +1,15 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { DispatchContext } from '$lib/server/handlers';
 import { generateSchemas, type ModelDefinition } from '$lib/server/model';
-import { runPlugins } from '$lib/server/plugin';
+import { runPluginList } from '$lib/server/plugin';
 import { createTables, resetTables } from '$lib/server/table';
 import type { PluginContext, PluginDefinition } from '$lib/types';
 
-const state = vi.hoisted(() => ({ plugin: undefined as PluginDefinition | undefined }));
+const state = { plugin: undefined as PluginDefinition | undefined };
 
-vi.mock('$lib/server/runtime', () => ({
-	getConfig: () => ({ PLUGIN: state.plugin }),
-}));
+function runPlugins(response: Response, dispatchContext: DispatchContext) {
+	return runPluginList(state.plugin, response, dispatchContext);
+}
 
 const model: ModelDefinition = {
 	todos: (t) => ({

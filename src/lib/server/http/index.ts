@@ -1,3 +1,3 @@
-export { handleCors } from '$lib/server/http/cors';
-export { handleControlPlane, isControlPlane } from '$lib/server/http/control';
-export { handleDataPlane } from '$lib/server/http/data';
+export { dataPlane } from '$lib/server/http/app';
+export { isControlPlane } from '$lib/server/http/control';
+export { CORS_HEADERS } from '$lib/server/http/cors';

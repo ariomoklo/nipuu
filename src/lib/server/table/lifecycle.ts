@@ -1,68 +1,93 @@
 import type { Row, Schema } from '$lib/server/model/types';
-import type { LifecycleListener, SetItem } from '$lib/types';
+import { Effect, Exit, FiberSet, PubSub, Scope } from 'effect';
 
-export type TableLifecycle = 'after.seed' | 'update' | 'upsert';
+export type TableEvent =
+	| { readonly _tag: 'Seeded' }
+	| { readonly _tag: 'Updated'; readonly row: Row; readonly index: number }
+	| { readonly _tag: 'Upserted'; readonly row: Row; readonly index: number };
 
 export type Table = {
 	schema: Schema;
 	seedCount: number;
 	rows: Row[];
-	pending: Set<Promise<void>>;
-	lifecycles: {
-		'after.seed': Set<(table: Table) => void>;
-		update: Set<(row: Row, index: number) => void>;
-		upsert: Set<(row: Row, index: number) => void>;
-	};
-	destroyRef: Set<() => void>;
+	events: PubSub.PubSub<TableEvent>;
+	scope: Scope.Closeable;
+	fibers: FiberSet.FiberSet<void>;
 };
 
-export function trackDestroy(table: Table, unsub: () => void) {
-	table.destroyRef.add(unsub);
+export type TableListener = (event: TableEvent) => Effect.Effect<void, unknown>;
+
+function eventFrom(
+	event: 'after.seed' | 'update' | 'upsert',
+	args: ReadonlyArray<unknown>,
+): TableEvent {
+	if (event === 'after.seed') return { _tag: 'Seeded' };
+	const row = args[0] as Row;
+	const index = args[1] as number;
+	return event === 'update' ? { _tag: 'Updated', row, index } : { _tag: 'Upserted', row, index };
 }
 
-export function destroy(table: Table) {
-	for (const unsub of table.destroyRef) {
-		unsub();
-	}
+export const openTable = (schema: Schema, seedCount: number): Effect.Effect<Table> =>
+	Effect.gen(function* () {
+		const events = yield* PubSub.unbounded<TableEvent>();
+		const scope = yield* Scope.make();
+		const fibers = yield* FiberSet.make<void>().pipe(Effect.provideService(Scope.Scope, scope));
+		return { schema, seedCount, rows: [], events, scope, fibers };
+	});
 
-	table.destroyRef.clear();
-
-	for (const listeners of Object.values(table.lifecycles)) {
-		listeners.clear();
-	}
-
-	table.pending.clear();
-	table.rows = [];
-}
-
-export function on<T extends TableLifecycle>(
+/** One PubSub per table so a subscriber only sees that table's writes. */
+export const subscribe = (
 	table: Table,
-	event: T,
-	callback: SetItem<(typeof table.lifecycles)[T]>,
-) {
-	const fnSet = table.lifecycles[event] as Set<typeof callback>;
-	fnSet.add(callback);
-	return () => fnSet.delete(callback);
+	handler: TableListener,
+): Effect.Effect<void, never, Scope.Scope> =>
+	Effect.gen(function* () {
+		const subscription = yield* PubSub.subscribe(table.events);
+		yield* Effect.forkScoped(
+			Effect.forever(
+				Effect.gen(function* () {
+					const event = yield* PubSub.take(subscription);
+					yield* FiberSet.run(
+						table.fibers,
+						Effect.gen(function* () {
+							yield* Effect.promise(() => Promise.resolve());
+							yield* handler(event);
+						}).pipe(Effect.catchCause((cause) => Effect.logWarning('listener failed', cause))),
+					);
+				}),
+			),
+		);
+	});
+
+export const publish = (table: Table, event: TableEvent): Effect.Effect<void> =>
+	Effect.gen(function* () {
+		yield* PubSub.publish(table.events, event);
+		yield* Effect.yieldNow;
+	});
+
+export const flushEffect = (table: Table): Effect.Effect<void> => FiberSet.awaitEmpty(table.fibers);
+
+export const destroyEffect = (table: Table): Effect.Effect<void> =>
+	Effect.gen(function* () {
+		yield* Scope.close(table.scope, Exit.void);
+		table.rows = [];
+	});
+
+export function createTable(schema: Schema, seedCount: number): Table {
+	return Effect.runSync(openTable(schema, seedCount));
 }
 
-export function broadcast<T extends TableLifecycle>(
+export function broadcast(
 	table: Table,
-	event: T,
-	...args: Parameters<SetItem<(typeof table.lifecycles)[T]>>
+	event: 'after.seed' | 'update' | 'upsert',
+	...args: ReadonlyArray<unknown>
 ): Promise<void> {
-	let task!: Promise<void>;
-	task = Promise.resolve()
-		.then(() => {
-			for (const callback of table.lifecycles[event]) {
-				(callback as LifecycleListener<any[], void>)(...args);
-			}
-		})
-		.catch(() => {})
-		.finally(() => table.pending.delete(task));
-	table.pending.add(task);
-	return task;
+	return Effect.runPromise(publish(table, eventFrom(event, args)));
 }
 
 export function flush(table: Table): Promise<void> {
-	return Promise.all(table.pending).then(() => undefined);
+	return Effect.runPromise(flushEffect(table));
+}
+
+export function destroy(table: Table): void {
+	Effect.runSync(destroyEffect(table));
 }

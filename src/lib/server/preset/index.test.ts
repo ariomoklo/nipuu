@@ -1,15 +1,15 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { DispatchContext } from '$lib/server/handlers';
 import { generateSchemas, type ModelDefinition } from '$lib/server/model';
-import { applyPreset } from '$lib/server/preset';
+import { applyPresetWith } from '$lib/server/preset';
 import { createTables, resetTables } from '$lib/server/table';
 import type { PresetContext, PresetDefinition } from '$lib/types';
 
-const state = vi.hoisted(() => ({ preset: undefined as PresetDefinition | undefined }));
+const state = { preset: undefined as PresetDefinition | undefined };
 
-vi.mock('$lib/server/runtime', () => ({
-	getConfig: () => ({ PRESET: state.preset }),
-}));
+function applyPreset(response: Response, data: unknown, dispatchContext: DispatchContext) {
+	return applyPresetWith(state.preset, response, data, dispatchContext);
+}
 
 const model: ModelDefinition = {
 	todos: (t) => ({

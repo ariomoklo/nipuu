@@ -1,17 +1,23 @@
-import { validate } from '$lib/server/model';
-import { projectRowScalar, requireTable } from '$lib/server/handlers/project';
-import { json, validationError } from '$lib/server/handlers/respond/respond';
+import { projectRowScalar } from '$lib/server/handlers/project';
+import type { ActionBody } from '$lib/server/handlers/errors';
 import type { DispatchContext } from '$lib/server/handlers/sources/sources';
-import { toStore, upsert } from '$lib/server/table';
+import { ValidationFailed, validateEffect } from '$lib/server/model/validate/validate';
+import { TableNotFound, TableStore } from '$lib/server/table/store/service';
 import type { RouteHandlerObject } from '$lib/types';
+import { Effect } from 'effect';
 
-export function upsertAction(handler: RouteHandlerObject, context: DispatchContext): Response {
-	const table = requireTable(handler);
-	if (!table) return json({ error: 'Unknown table' }, 400);
+export function upsertEffect(
+	handler: RouteHandlerObject,
+	context: DispatchContext,
+): Effect.Effect<ActionBody, TableNotFound | ValidationFailed, TableStore> {
+	return Effect.gen(function* () {
+		if (typeof handler.model !== 'string') return yield* new TableNotFound({ table: '' });
 
-	const result = validate([table.schema], toStore(), table.schema.name, context.body);
-	if (!result.ok) return validationError(result.errors);
-
-	const row = upsert(table, result.data);
-	return json(projectRowScalar(row, table));
+		const tables = yield* TableStore;
+		const table = yield* tables.get(handler.model);
+		const store = yield* tables.snapshot;
+		const data = yield* validateEffect([table.schema], store, table.schema.name, context.body);
+		const row = yield* tables.upsert(table.schema.name, data);
+		return { _tag: 'Json', value: projectRowScalar(row, table) };
+	});
 }

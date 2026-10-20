@@ -1,7 +1,9 @@
-import { bodyResponse, toPresetContext } from '$lib/server/handlers/respond/respond';
+import { bodyResponse, serverError, toPresetContext } from '$lib/server/handlers/respond/respond';
 import type { DispatchContext } from '$lib/server/handlers/sources/sources';
-import { getConfig } from '$lib/server/runtime';
+import { runAppPromise } from '$lib/server/effect/runtime';
+import { callUser } from '$lib/server/user-code';
 import type { PresetDefinition, PresetLeaf } from '$lib/types';
+import { Effect } from 'effect';
 
 const ANY = '*';
 
@@ -69,23 +71,50 @@ function readLeaf(
 	return undefined;
 }
 
-export async function applyPreset(
+export const applyPresetLeafEffect = (
+	leaf: PresetLeaf,
+	data: unknown,
+	context: DispatchContext,
+	status: number,
+) =>
+	Effect.gen(function* () {
+		if (typeof leaf !== 'function') return bodyResponse(leaf, status);
+
+		const mapped = yield* callUser('preset', 0, () => leaf(toPresetContext(data, context, status)));
+		return mapped instanceof Response ? mapped : bodyResponse(mapped, status);
+	});
+
+export const applyPresetEffect = (
+	preset: PresetDefinition | undefined,
+	response: Response,
+	data: unknown,
+	context: DispatchContext,
+) =>
+	Effect.gen(function* () {
+		if (!preset) return response;
+
+		const leaf = readLeaf(preset, context.method, response.status);
+		if (leaf === undefined) return response;
+
+		return yield* applyPresetLeafEffect(leaf, data, context, response.status);
+	});
+
+function toPresetResponse(
+	preset: PresetDefinition | undefined,
+	response: Response,
+	data: unknown,
+	context: DispatchContext,
+) {
+	return applyPresetEffect(preset, response, data, context).pipe(
+		Effect.catchTag('UserCodeFailed', () => Effect.succeed(serverError('Preset failed'))),
+	);
+}
+
+export function applyPresetWith(
+	preset: PresetDefinition | undefined,
 	response: Response,
 	data: unknown,
 	context: DispatchContext,
 ): Promise<Response> {
-	const preset = getConfig().PRESET;
-	if (!preset) return response;
-
-	const status = response.status;
-	const leaf = readLeaf(preset, context.method, status);
-	if (leaf === undefined) return response;
-
-	if (typeof leaf !== 'function') {
-		return bodyResponse(leaf, status);
-	}
-
-	const mapped = await leaf(toPresetContext(data, context, status));
-
-	return mapped instanceof Response ? mapped : bodyResponse(mapped, status);
+	return runAppPromise(toPresetResponse(preset, response, data, context));
 }

@@ -1,5 +1,7 @@
-import { bodyResponse, serverError } from '$lib/server/handlers/respond/respond';
+import type { ActionBody } from '$lib/server/handlers/errors';
+import { InvalidStatic } from '$lib/server/handlers/errors';
 import type { RouteHandlerObject } from '$lib/types';
+import { Effect } from 'effect';
 
 function isStaticResponse(value: unknown): boolean {
 	if (value === null) return true;
@@ -16,11 +18,11 @@ function isStaticResponse(value: unknown): boolean {
 	}
 }
 
-export function staticAction(handler: RouteHandlerObject): Response {
+export function staticEffect(
+	handler: RouteHandlerObject,
+): Effect.Effect<ActionBody, InvalidStatic> {
 	const value = handler.response;
-	if (!isStaticResponse(value)) {
-		return serverError('Invalid static response');
-	}
+	if (!isStaticResponse(value)) return Effect.fail(new InvalidStatic());
 
-	return bodyResponse(value);
+	return Effect.succeed({ _tag: 'Body', value });
 }
