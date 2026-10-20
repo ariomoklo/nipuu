@@ -242,7 +242,7 @@ export const PRESET = {
 }
 ```
 
-The config loader reads only the optional `PRESET` export.
+The config loader reads only the optional `PRESET` export. A function leaf that throws or rejects becomes 500 `{ "error": "Preset failed" }`.
 
 A `*` / `*` leaf overrides every uncaught data-plane response (404, 200, 400, 500, unmatched, miss). Status stays the action status; only the body (or a returned `Response`) comes from the leaf. In the example above, `GET` 404 uses the function, `GET` 5xx uses `"5**"`, any other 404 uses `{ error: 'Nothing here' }`, and everything else falls through to `'base default fallback'`.
 
@@ -280,7 +280,7 @@ export const PLUGIN = [
 
 With `PLUGIN = [fnA, fnB, handleC]`, `fnA` runs first on the route's response, `fnB` runs on `fnA`'s response, then `handleC` runs on `fnB`'s. Each function receives the plugin context: the response context without `data`, plus `status` and `response` from the response it was handed.
 
-A return value is treated exactly like a route handler's `response`: a `Response` is used as-is, anything else is JSON at the incoming status. So a plugin that returns nothing empties the body — return `response` to pass through untouched. Plugins are awaited, so async plugins work. A non-function entry is 500 `{ "error": "Invalid plugin" }`.
+A return value is treated exactly like a route handler's `response`: a `Response` is used as-is, anything else is JSON at the incoming status. So a plugin that returns nothing empties the body — return `response` to pass through untouched. Plugins are awaited, so async plugins work. A non-function entry is 500 `{ "error": "Invalid plugin" }`. A function that throws or rejects is 500 `{ "error": "Plugin failed" }`.
 
 The queue runs after `PRESET` and after the route's own `response()`, including on unmatched 404s, and is the last step before the request is logged. Never applies to the control plane.
 

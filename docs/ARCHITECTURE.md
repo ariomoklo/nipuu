@@ -1,32 +1,40 @@
 # Nipuu architecture
 
-Nipuu is a mock API CLI hosted by SvelteKit. User APIs are runtime data (`MODEL` + `ROUTE`, and optionally `PRESET` and `PLUGIN`, from a config file). First-party UI is a real SvelteKit app. Domain logic never lives in `hooks.server.ts` or `+page.svelte`.
+Nipuu is a mock API CLI. User APIs are runtime data (`MODEL` + `ROUTE`, and optionally `PRESET` and `PLUGIN`, from a config file). The inspector is a SvelteKit app. Domain logic lives in `src/lib/server/**` and never in `+page.svelte`.
 
 ## Two-plane host
 
-Treat SvelteKit as two planes, not as a file-router for user APIs.
+One Node HTTP server, one port. `isControlPlane` is the only split:
 
-- **Control plane** — `/_nipuu`, `/_app`, `/@…`, `/src`, `/node_modules`, and other Vite/SvelteKit internals. These call `resolve` and use the file router.
-- **Data plane** — every other path. `handle` matches `ROUTE`, runs the route action, logs, and returns a `Response`. It never calls `resolve`.
+- **Control plane** — `/_nipuu`, `/_app`, `/@…`, `/src`, `/node_modules`, `/.svelte-kit`, `/__vite`, and `/virtual:stylex.css` / `/virtual:stylex.js` (the StyleX dev stylesheet and runtime). These go to Vite in `middlewareMode`, which serves the SvelteKit inspector.
+- **Data plane** — every other path. The Effect HTTP app calls `handleRequestEffect`. It never touches Vite or SvelteKit.
 
 Unmatched method/path pairs return **404** `{ "error": "Not Found" }`, unless `PRESET` matches that method and status.
 
-A catch-all `+server.ts` is the wrong layer: user routes are defined at runtime, `/` would still need a second entry point, and returning a `Response` from `handle` is the documented SvelteKit short-circuit.
+A catch-all `+server.ts` is the wrong layer: user routes are defined at runtime.
 
 ## Request flow
 
 ```
-cli.js → Vite / SvelteKit → hooks.server.ts (sequence)
-  handleCors → handleControlPlane → handleDataPlane
+src/cli.js
+  → Node http.Server
+       isControlPlane?  vite.middlewares  → SvelteKit inspector
+       else             Effect HTTP app   → handleRequestEffect
 ```
 
-`src/hooks.server.ts` only composes `sequence(handleCors, handleControlPlane, handleDataPlane)`. No matching, seeding, or JSON shaping belongs there.
+`src/hooks.ts` only reroutes `/_nipuu` to `/inspector` for route matching. `event.url` stays `/_nipuu`. There is no `hooks.server.ts`.
 
-1. **handleCors** — `OPTIONS` preflight and CORS headers on every outgoing response.
-2. **handleControlPlane** — continues the sequence. Control-plane paths reach the file router; data-plane paths reach `handleDataPlane`.
-3. **handleDataPlane** — if the path is control-plane, `resolve(event)`. Otherwise `initRuntime()` then `handleRequest(event)` always returns a `Response` (action result, static body, 400 validation, or 404).
+CORS headers are set on every response, including the control plane. `OPTIONS` is **204** with an empty body. The header set is `Access-Control-Allow-Origin: *`, methods `GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD`, headers `Content-Type, Authorization`, and `Access-Control-Max-Age: 86400`.
 
-`App.Locals` holds only `requestId` and `startedAt`. Do not put the store on `locals`.
+`App.Locals` may only declare `requestId` and `startedAt`. The data plane does not write locals. The log entry carries the request id. Do not put the store on `locals`.
+
+`handleRequestEffect` is `Effect.fn('nipuu.handleRequest')`. The steps, in order:
+
+1. Read the body (JSON, raw text, or `null`) and build `DispatchContext`.
+2. Match `ROUTE`. Unmatched paths are **404**.
+3. Run the action, then `delay` when the handler has one.
+4. Peek the body, apply `PRESET`, run the route `response` mapper, run `PLUGIN`.
+5. Append a log from `Clock` on the way out, including when a later step fails. A throwing route `response` mapper is **500** `{ "error": "Invalid response" }` and is still logged.
 
 ## Inspector URL
 
@@ -36,7 +44,11 @@ SvelteKit treats directories that start with `_` as private modules, so `src/rou
 
 All mutable process state lives under `src/lib/server/` and is imported only from hooks, `+page.server.ts`, and `+server.ts`. Import these modules with `$lib/server/...` aliases, never relative paths. The client must never import `$lib/server`.
 
-Process-lifetime state (config, compiled schemas, tables, logs, field-schema registry) is stored on `globalThis` via `Symbol.for` so Vite HMR does not re-seed. Domain code is functions over plain data, not classes.
+The process `ManagedRuntime` is created from `AppLayer` in `src/lib/server/app/layer.ts` before the server listens. The CLI stores that runtime on the module in `src/lib/server/effect/runtime.ts` and copies it into `import.meta.hot.data` so an inspector reload keeps the same seeded process. Inspector `load` functions and the data plane both run effects on that runtime. Do not build a Layer per request.
+
+`AppLayer` is `NipuuConfig` (load the config file) → `ModelSchemas` (`generateSchemas`) → a seeded `TableStore`, merged with `LogStore`. Config values come from a `ConfigProvider` (`NIPUU_CONFIG`, `NIPUU_PORT`, `NIPUU_SEED`), not from ad-hoc `process.env` reads in domain code.
+
+The field-schema registry in `src/lib/server/table/schema.ts` still uses `Symbol.for('nipuu.schema')` on `globalThis`. The Shiki highlighter uses `Symbol.for('nipuu.shiki')`. Config, model schemas, tables, and logs do not.
 
 ### File layout
 
@@ -48,17 +60,19 @@ Process-lifetime state (config, compiled schemas, tables, logs, field-schema reg
 
 | Module | Role |
 |---|---|
-| `runtime/` | `initRuntime()` loads config, compiles MODEL, seeds tables. `handleRequest(event)` is the data-plane entry. Config and schemas live on `globalThis`. |
-| `runtime/config.ts` | `pathToFileURL` + dynamic import of `NIPUU_CONFIG`. Fail fast if `MODEL` / `ROUTE` are missing. `PRESET` and `PLUGIN` are optional. |
-| `runtime/handle.ts` | Match `ROUTE`, dispatch, apply `PRESET`, run the route mapper, run `PLUGIN`, append a log. Body read/peek are unexported locals. |
-| `model/` | `generateSchemas()`, field factory, `validate()`. Types in `types.ts`. No SvelteKit imports. |
-| `table/` | In-memory `Table` map, seed, relation snapshots, `find` / `select` / `query` / `insert` / `update` / `deleteRow`. |
+| `app/` | `NipuuConfig`, `ModelSchemas`, and `AppLayer`. This is the only place Layers are wired together. |
+| `effect/runtime.ts` | The process `ManagedRuntime`. `runAppSync` / `runAppPromise` are the inspector edge. |
+| `runtime/config/` | `loadConfigEffect` imports `NIPUU_CONFIG`. Missing `MODEL` or `ROUTE` is `ConfigShapeInvalid`. `PRESET` and `PLUGIN` are optional. |
+| `runtime/handle.ts` | `handleRequestEffect`: match, action, delay, preset, route mapper, plugins, log. |
+| `model/` | `generateSchemas()`, field factory, Schema `validate()`. Types in `types.ts`. No SvelteKit imports. |
+| `table/` | `TableStore` service, seed, relation snapshots, `find` / `select` / `query` / `insert` / `update` / `deleteRow`. |
 | `router/` | Parse `/todos/:id` patterns, match method + path, extract params. No SvelteKit imports. |
-| `preset/` | `applyPreset()` overrides a response body by method and status from the optional `PRESET` export. Status keys may be exact or globs (`"5**"`, `"*"`). |
-| `plugin/` | `runPlugins()` runs the optional `PLUGIN` array in index order after the route mapper. Each function gets `PluginContext` and its return value becomes the next `Response`. |
-| `handlers/` | Dispatch `static` / `search` / `find` / `upsert` / `update` / `delete`. Validation runs inside mutating actions. |
-| `logs.ts` | In-memory ring buffer: `appendLog` / `listLogs` / `getLog`. |
-| `http/` | CORS, control-plane predicate, data-plane handle. |
+| `preset/` | `applyPresetEffect` overrides a response body by method and status. Status keys may be exact or globs (`"5**"`, `"*"`). |
+| `plugin/` | `runPluginsEffect` runs `PLUGIN` in index order after the route mapper. |
+| `handlers/` | Dispatch `static` / `search` / `find` / `upsert` / `update` / `delete`. Validation runs inside mutating actions. Expected failures are tagged errors. |
+| `logs/` | `LogStore` ring buffer. `appendLog` / `listLogs` / `getLog` read it through the runtime. |
+| `http/` | CORS header set, `isControlPlane`, and the Effect data-plane app. |
+| `cli/` | `effect/cli` command and the host that listens. `src/cli.js` is the Node launcher. |
 
 Shared DTOs the inspector may import live in `src/lib/types/` (for example `LogEntry`). No store, no `fs`, no env reads there.
 
@@ -78,8 +92,8 @@ Mock-server scenario tests (`npm run test:mock`, project `mock`) live in `src/te
 - `upsert` (full) and `update` (partial) call `validate()`. Failure is **400** and does not write rows.
 - Optional CRUD `response(RouteContext)` maps the action result after `PRESET`. The shared base is `{ data, model, status, method, path, params, queries, body }`; ROUTE also gets `response` (the `Response` after PRESET). `data` is the action result. Returning a `Response` uses it as-is; any other value is JSON at `response.status`.
 - Optional `delay` (milliseconds) on any HTTP method’s object handler waits after that method’s action and before the log. Shorthand string or number handlers cannot delay. Omitted, `0`, negative, or non-finite `delay` is no wait. Unmatched 404 is not delayed. Inspector `duration` includes the wait.
-- Optional `PRESET` (`method → status → leaf`, `'*'` wildcard for method, status globs such as `"5**"`) runs after the action and after `delay`, before the route mapper, on every data-plane response. An exact method beats `'*'`, an exact status beats a glob, and `{ '*': { '*': leaf } }` is the catch-all for any uncaught method and status. A static leaf keeps the action status; a function leaf gets `PresetContext` (no `response`) and may return a `Response`. Never applies to the control plane.
-- Optional `PLUGIN` (an array of functions) runs last, after the route mapper, in index order, on every data-plane response including an unmatched 404. Each function gets `PluginContext`: the shared base without `data`, plus a required `response` (and `status`) that is the response the previous plugin produced. A returned `Response` is used as-is; any other value is JSON at the incoming status, so a plugin that returns nothing empties the body. Returning the incoming `response` is the pass-through. A non-function entry is **500**. Never applies to the control plane.
+- Optional `PRESET` (`method → status → leaf`, `'*'` wildcard for method, status globs such as `"5**"`) runs after the action and after `delay`, before the route mapper, on every data-plane response. An exact method beats `'*'`, an exact status beats a glob, and `{ '*': { '*': leaf } }` is the catch-all for any uncaught method and status. A static leaf keeps the action status; a function leaf gets `PresetContext` (no `response`) and may return a `Response`. A function leaf that throws or rejects is **500** `{ "error": "Preset failed" }`; the cause is logged. Never applies to the control plane.
+- Optional `PLUGIN` (an array of functions) runs last, after the route mapper, in index order, on every data-plane response including an unmatched 404. Each function gets `PluginContext`: the shared base without `data`, plus a required `response` (and `status`) that is the response the previous plugin produced. A returned `Response` is used as-is; any other value is JSON at the incoming status, so a plugin that returns nothing empties the body. Returning the incoming `response` is the pass-through. A non-function entry is **500** `{ "error": "Invalid plugin" }`. A function that throws or rejects is **500** `{ "error": "Plugin failed" }`; the cause is logged. Never applies to the control plane.
 - Every data-plane request is logged. Control-plane requests are not logged as mock API calls.
 
 ## CLI and npx
@@ -88,11 +102,17 @@ Usage: `nipuu <config-file> [--port 4210] [--seed 10]`
 
 No `serve` subcommand. Default port is **4210**. Config path is required.
 
+`src/cli.js` is a plain Node launcher so `npx` needs no build. It `chdir`s to the package root (SvelteKit replaces Vite's `root` with the current directory), creates the Node server, starts Vite in middleware mode with `server.hmr.server` set to that server, and loads `src/lib/server/cli/main.ts`.
+
+The command is `effect/cli`. `--port` must be an integer greater than 0 (default **4210**). `--seed` must be an integer greater than or equal to 0 (default **10**). `-h` and `--help` print the generated help and exit 0. A missing file prints `Config file not found: <path>` and `Usage: nipuu <config-file> [--port 4210] [--seed 10]`, then exits 1. A config that fails to import, or that does not export `MODEL` and `ROUTE`, prints the same message as `loadConfigEffect` and exits 1. A port already in use prints `Port <port> is already in use` and exits 1.
+
+The parsed path, port, and seed are passed through a `ConfigProvider`. The runtime is built **before** `listen`. `NodeRuntime.runMain` owns the process. Ctrl+C interrupts the program, runs finalizers (HTTP server, then the runtime, then Vite), and exits **130**.
+
 The CLI:
 
-1. Resolves `<config-file>` against `process.cwd()` and sets `NIPUU_CONFIG`, `NIPUU_PORT`, `NIPUU_SEED`.
-2. Starts Vite with `root` and `configFile` at the **nipuu package root** (`import.meta.url` → `src/cli.js` → `../..`), never cwd.
-3. Initializes the runtime once after `listen` so a bad config fails before the first client call.
+1. Resolves `<config-file>` against the working directory from before `chdir`.
+2. Builds `AppLayer` and fails fast on a bad config.
+3. Listens on the Node server. Control-plane paths go to `vite.middlewares`. Everything else goes to the Effect app.
 
 This package is shaped for `npx`:
 
@@ -117,4 +137,4 @@ This package is shaped for `npx`:
 - `src/routes/inspector/tables/+page.svelte`, `[table]/+page.svelte`, `[table]/new/+page.svelte`, `[table]/edit/+page.svelte` — table list, browser, and the two row forms. Never import `$lib/server` from a page.
 - Inspector UI uses StyleX (`stylex.attrs`) and `$lib/ui` components. Tokens are `$lib/ui/shared/tokens.stylex.ts`.
 
-Inspector table pages are control-plane (`/_nipuu/tables/...`). They call `initRuntime()` only to ensure seed ran, then use `getTable()` / `listTables()`. They never call `handleRequest()`, never match `ROUTE`, and are not appended to the mock request log.
+Inspector table pages are control-plane (`/_nipuu/tables/...`). They read `TableStore` and `ModelSchemas` through the process runtime (`getTable()`, `listTables()`, `runAppSync`). They never call `handleRequestEffect`, never match `ROUTE`, and are not appended to the mock request log.

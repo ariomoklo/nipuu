@@ -17,19 +17,24 @@ Read `docs/CONDUCT.md` and `docs/ARCHITECTURE.md` before changing architecture, 
 
 ## Architecture rules
 
-- Keep SvelteKit a two-plane host: control plane (`/_nipuu` and Vite/Kit internals) uses `resolve`; the data plane never uses `resolve`.
-- `src/hooks.server.ts` only composes `sequence()`. Domain logic stays in `src/lib/server/**`.
+- One Node server. `isControlPlane` sends `/_nipuu` and Vite/Kit internals to Vite middleware. Every other path goes to the Effect HTTP app. The data plane never calls SvelteKit `resolve`.
+- Domain logic stays in `src/lib/server/**`. `src/hooks.ts` only reroutes `/_nipuu` to `/inspector`.
 - The client never imports `$lib/server`. Shared DTOs live in `src/lib/types/`.
 - `App.Locals` is only `requestId` and `startedAt`.
 - Do not implement features that `docs/` and `plans/` mark as future work (persistence, SSE) unless a later plan in `plans/` is being executed.
 - Inspector UI follows `docs/DESIGN.md`. Do not invent tokens, type, or StyleX patterns.
 
-## Functional style
+## Effect conventions
 
-- Prefer functions, plain data, and module-owned `globalThis` state over classes.
-- Do not add classes, instance methods, or OOP hierarchies.
+- Services are `Context.Service` classes. Implement them as Layers in the module that owns them (`logs/`, `table/`). Wire Layers only in `AppLayer` (`src/lib/server/app/layer.ts`). Do not `Effect.provide` a Layer inside a request.
+- Expected failures are tagged errors (`Data.TaggedError` or `Schema.TaggedError`) on the `E` channel. Domain code does not `throw` and has no `try/catch`. A broken invariant is a defect (`Effect.die`).
+- `NodeRuntime.runMain` is the process entry. Inspector `load` / `+server.ts` and the sync adapters (`validate`, `dispatch`, `getTable`, log helpers, table lifecycle) may call `runAppSync`, `runAppPromise`, or `Effect.runSync` / `Effect.runPromise`. Do not add a new `run*` inside request handling, and do not `Effect.provide` a Layer per request.
+- Domain effects do not use `try/catch`. `src/cli.js` may, because it only loads the Effect program.
+- Time comes from `Clock` and `Effect.sleep`. Tests use `it.effect` from `@effect/vitest`, with test Layers and `TestClock`. Do not wait on the real clock in a unit test.
+- Acquire servers, runtimes, and subscriptions with `Scope` / `Effect.acquireRelease` so interruption releases them.
+- `class` is allowed only for `Context.Service`, `Data.TaggedError`, and `Schema.TaggedError`. No other classes, instance methods, or OOP hierarchies.
 - Fluent MODEL field builders are factory functions that return new builder values, not class instances.
-- Process-lifetime state (config, compiled schemas, tables, logs, field-schema registry) lives on `globalThis` via `Symbol.for`. Never put it on `App.Locals`. Never thread a god object through every call.
+- Do not put config, model schemas, tables, or logs on `globalThis`. The field-schema registry (`Symbol.for('nipuu.schema')`) and the Shiki highlighter (`Symbol.for('nipuu.shiki')`) are the exceptions. Never put process state on `App.Locals`.
 
 ## File layout
 
